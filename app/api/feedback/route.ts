@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are an expert interview coach. Score the candidate's answer and return ONLY valid JSON matching this schema:
+            content: `You are an expert interview coach who writes like a great storyteller, not a corporate template. Score the candidate and return ONLY valid JSON:
 {
   "scores": {
     "clarity": number 1-10,
@@ -71,7 +71,17 @@ export async function POST(req: NextRequest) {
   "followUpQuestion": string,
   "summary": string
 }
-Be constructive, specific, and professional. Interview mode: ${mode}.`,
+
+Rules for sampleBetterAnswer (critical — this is what candidates copy and learn from):
+- Use full STAR labels: Situation, Task, Action, Result (blank line between each).
+- Write a DYNAMIC real-world story: specific job moment, named stakes, sensory/human detail (tense standup, Friday deploy, angry-not-angry VP, etc.).
+- First person ("I"), personable and memorable — NOT generic phrases like "in my previous role we faced a high-stakes scenario" or "aligned stakeholders and broke work into milestones."
+- Include concrete numbers, tools, or outcomes where natural (%, hours, $, latency, CSAT).
+- End with a one-line closer that is sticky (a lesson or punchline interviewers remember).
+- Match the question's theme (conflict, failure, leadership, customer, technical debug, system design, etc.).
+- Length: roughly 180–320 words. Still interview-spoken, not an essay.
+
+Be constructive and specific on strengths/improvements. Interview mode: ${mode}.`,
           },
           {
             role: "user",
@@ -105,8 +115,10 @@ Be constructive, specific, and professional. Interview mode: ${mode}.`,
           Array.isArray(parsed.improvements) && parsed.improvements.length
             ? parsed.improvements
             : local.improvements,
-        sampleBetterAnswer:
-          parsed.sampleBetterAnswer || local.sampleBetterAnswer,
+        sampleBetterAnswer: preferRichSample(
+          parsed.sampleBetterAnswer,
+          local.sampleBetterAnswer
+        ),
         keyPhrases:
           Array.isArray(parsed.keyPhrases) && parsed.keyPhrases.length
             ? parsed.keyPhrases
@@ -133,4 +145,26 @@ function num(v: unknown, fallback: number): number {
   const n = Number(v);
   if (Number.isFinite(n) && n >= 1 && n <= 10) return Math.round(n * 10) / 10;
   return fallback;
+}
+
+/** Prefer AI sample only if it looks like a real STAR story, not boilerplate. */
+function preferRichSample(ai: unknown, local: string): string {
+  if (typeof ai !== "string" || ai.trim().length < 120) return local;
+  const t = ai.toLowerCase();
+  const genericMarkers = [
+    "high-stakes scenario related to this theme",
+    "aligned stakeholders, broke the work into milestones",
+    "i'd start by clarifying requirements and constraints",
+    "in my previous role, we faced a challenging situation",
+    "this shows how i combine ownership",
+  ];
+  if (genericMarkers.some((m) => t.includes(m))) return local;
+
+  const hasStar =
+    /\bsituation\b/i.test(ai) &&
+    /\b(task|action)\b/i.test(ai) &&
+    /\bresult\b/i.test(ai);
+  // Thin or non-STAR AI text → keep our story bank
+  if (!hasStar && ai.length < 280) return local;
+  return ai.trim();
 }
