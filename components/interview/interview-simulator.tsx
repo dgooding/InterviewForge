@@ -28,7 +28,8 @@ import {
   buildPracticeSet,
   categoryToInterviewMode,
 } from "@/lib/questions";
-import { JOB_ROLES } from "@/lib/roles";
+import { JOB_ROLES, searchRoles } from "@/lib/roles";
+import { RoleSearch } from "@/components/role-search";
 import {
   generateLocalFeedback,
   questionsFromJobDescription,
@@ -699,24 +700,28 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
             <div className="mt-6 space-y-3">
               <p className="text-sm font-medium">Target role</p>
               <div className="flex flex-wrap gap-2">
-                {JOB_ROLES.filter((r) => r.popular).map((r) => (
-                  <Button
-                    key={r.id}
-                    size="sm"
-                    type="button"
-                    variant={
-                      selectedRole === r.title && !customRole
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() => {
-                      setCustomRole("");
-                      setSelectedRole(r.title);
-                    }}
-                  >
-                    {r.title}
-                  </Button>
-                ))}
+                {searchRoles("", 8).map((r) => {
+                  const active =
+                    (customRole.trim() || selectedRole || "") === r.title;
+                  return (
+                    <Button
+                      key={r.id}
+                      size="sm"
+                      type="button"
+                      variant={active ? "default" : "outline"}
+                      onClick={() => {
+                        setCustomRole("");
+                        setSelectedRole(r.title);
+                        toast.success(`Role set: ${r.title}`, {
+                          id: "role-set",
+                          duration: 1500,
+                        });
+                      }}
+                    >
+                      {r.title}
+                    </Button>
+                  );
+                })}
                 <Button
                   size="sm"
                   type="button"
@@ -726,22 +731,28 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                   Browse all roles
                 </Button>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  aria-label="Custom role"
-                  placeholder="Or type a custom role…"
-                  value={customRole}
-                  onChange={(e) => setCustomRole(e.target.value)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Active:{" "}
-                <span className="font-medium text-foreground">
-                  {customRole.trim() ||
-                    selectedRole ||
-                    "Software Engineer (default)"}
-                </span>
-              </p>
+              <RoleSearch
+                value={
+                  customRole.trim() ||
+                  selectedRole ||
+                  "Software Engineer"
+                }
+                onSelect={(title) => {
+                  const known = JOB_ROLES.some((r) => r.title === title);
+                  if (known) {
+                    setCustomRole("");
+                    setSelectedRole(title);
+                  } else {
+                    setCustomRole(title);
+                    setSelectedRole(title);
+                  }
+                  toast.success(`Role set: ${title}`, {
+                    id: "role-set",
+                    duration: 1500,
+                  });
+                }}
+                placeholder="Search roles (IT Service Desk, Frontend…)"
+              />
             </div>
 
             {/* Mode is locked by URL; quick switch to other full modes */}

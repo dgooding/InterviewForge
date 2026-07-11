@@ -23,11 +23,11 @@ import {
   categoryToInterviewMode,
   getQuestionById,
 } from "@/lib/questions";
-import { JOB_ROLES } from "@/lib/roles";
+import { searchRoles } from "@/lib/roles";
 import type { InterviewQuestion } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RoleSearch } from "@/components/role-search";
 import {
   Card,
   CardContent,
@@ -87,10 +87,7 @@ export default function InterviewHubPage() {
 
   const activeRole = selectedRole || "Software Engineer";
 
-  const popularRoles = useMemo(
-    () => JOB_ROLES.filter((r) => r.popular),
-    []
-  );
+  const chipRoles = useMemo(() => searchRoles("", 8), []);
 
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -134,7 +131,7 @@ export default function InterviewHubPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {popularRoles.map((r) => {
+            {chipRoles.map((r) => {
               const active = selectedRole === r.title;
               return (
                 <Button
@@ -158,33 +155,24 @@ export default function InterviewHubPage() {
                 </Button>
               );
             })}
-            <Button
-              size="sm"
-              type="button"
-              variant="ghost"
-              asChild
-            >
+            <Button size="sm" type="button" variant="ghost" asChild>
               <Link href="/roles">
                 <Briefcase className="h-3.5 w-3.5" />
                 Browse all roles
               </Link>
             </Button>
           </div>
-          <div className="max-w-md">
-            <Input
-              aria-label="Custom role"
-              placeholder="Or type a custom role and press Enter…"
-              defaultValue=""
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                const v = (e.target as HTMLInputElement).value.trim();
-                if (!v) return;
-                setSelectedRole(v);
-                toast.success(`Role set: ${v}`, { id: "role-set" });
-                (e.target as HTMLInputElement).value = "";
-              }}
-            />
-          </div>
+          <RoleSearch
+            value={activeRole}
+            onSelect={(title) => {
+              setSelectedRole(title);
+              toast.success(`Role set: ${title}`, {
+                id: "role-set",
+                duration: 1800,
+              });
+            }}
+            placeholder="Search roles (IT Service Desk, Frontend…)"
+          />
         </section>
 
         {/* Mode cards → dedicated routes */}

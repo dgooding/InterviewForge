@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Search, Briefcase, Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { JOB_ROLES } from "@/lib/roles";
+import { JOB_ROLES, searchRoles } from "@/lib/roles";
 import { useApp } from "@/components/providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,13 +26,9 @@ export default function RolesPage() {
   const [custom, setCustom] = useState("");
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return JOB_ROLES.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.category.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q)
-    );
+    if (!search.trim()) return JOB_ROLES;
+    // Use shared search so aliases like "service desk" / "helpdesk" work
+    return searchRoles(search, 100);
   }, [search]);
 
   const categories = useMemo(
