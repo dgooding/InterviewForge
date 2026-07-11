@@ -546,17 +546,19 @@ export async function deleteAllCloudData(userId: string): Promise<boolean> {
 }
 
 /**
- * Google sign-in — two modes (NEXT_PUBLIC_GOOGLE_AUTH_MODE):
+ * Google sign-in — NEXT_PUBLIC_GOOGLE_AUTH_MODE:
  *
- * - oauth (default once Client Secret is correct in Supabase):
+ * - oauth (DEFAULT): server-side secret exchange via Supabase
  *   signInWithOAuth → Google → Supabase /auth/v1/callback → app /auth/callback (PKCE)
+ *   Requires matching Client ID + Client Secret in Supabase Providers.
  *
- * - id_token:
- *   Firebase-hosted GIS popup → postMessage credential → signInWithIdToken
- *   (does not need a valid Google Client Secret in Supabase; only matching Client ID)
+ * - id_token (optional escape hatch only):
+ *   GIS popup → signInWithIdToken (avoids server-side secret exchange)
  *
- * - auto (default): try id_token first (works while secret is wrong), fall back message
- *   Set NEXT_PUBLIC_GOOGLE_AUTH_MODE=oauth after applying a valid secret.
+ * Google Authorized redirect URI must be:
+ *   https://rdalzpkjkoixawanravg.supabase.co/auth/v1/callback
+ * App redirectTo must be:
+ *   ${origin}/auth/callback  (allowlisted in Supabase Redirect URLs)
  */
 const GOOGLE_BRIDGE_ORIGIN =
   process.env.NEXT_PUBLIC_GOOGLE_BRIDGE_URL ||
@@ -583,34 +585,17 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult> {
     return { error: "Google sign-in must run in the browser." };
   }
 
+  // Default: standard OAuth code flow (server-side secret exchange).
+  // Set NEXT_PUBLIC_GOOGLE_AUTH_MODE=id_token only to intentionally skip it.
   const mode = (
-    process.env.NEXT_PUBLIC_GOOGLE_AUTH_MODE || "auto"
+    process.env.NEXT_PUBLIC_GOOGLE_AUTH_MODE || "oauth"
   ).toLowerCase();
 
-  if (mode === "oauth") {
-    return signInWithGoogleOAuth(supabase);
-  }
   if (mode === "id_token") {
     return signInWithGoogleIdToken(supabase);
   }
 
-  // auto: prefer ID token (survives wrong client secret), then OAuth
-  const idRes = await signInWithGoogleIdToken(supabase);
-  if (!idRes.error) return idRes;
-
-  // If popup blocked or GIS origin mismatch, try classic OAuth
-  const softFail =
-    /popup|origin|blocked|timed out|cancelled|closed/i.test(
-      idRes.error || ""
-    );
-  if (softFail) {
-    const oauthRes = await signInWithGoogleOAuth(supabase);
-    if (!oauthRes.error) return oauthRes;
-    return {
-      error: `${idRes.error} · OAuth fallback: ${oauthRes.error}`,
-    };
-  }
-  return idRes;
+  return signInWithGoogleOAuth(supabase);
 }
 
 async function signInWithGoogleOAuth(

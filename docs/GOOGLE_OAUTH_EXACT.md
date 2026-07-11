@@ -88,19 +88,14 @@ NEXT_PUBLIC_SUPABASE_URL=https://rdalzpkjkoixawanravg.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 NEXT_PUBLIC_APP_URL=https://interviewforge-zeta.vercel.app
 NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true
-# auto | oauth | id_token
-NEXT_PUBLIC_GOOGLE_AUTH_MODE=auto
-```
-
-- `redirectTo` for OAuth = `${origin}/auth/callback` (app)
-- PKCE exchange = `app/auth/callback/route.ts` + `@supabase/ssr` cookies
-- `id_token` mode uses Firebase bridge popup (no client secret needed for exchange)
-
-After a valid secret is in Supabase, set:
-
-```bash
+# oauth (DEFAULT) | id_token (only if intentionally avoiding secret exchange)
 NEXT_PUBLIC_GOOGLE_AUTH_MODE=oauth
 ```
+
+- `redirectTo` for OAuth = `${origin}/auth/callback` (app) — allowlisted in Supabase
+- Google redirect URI = `https://rdalzpkjkoixawanravg.supabase.co/auth/v1/callback` only
+- PKCE exchange = `app/auth/callback/route.ts` + `@supabase/ssr` cookies
+- `id_token` is **optional** escape hatch only (`NEXT_PUBLIC_GOOGLE_AUTH_MODE=id_token`)
 
 ---
 
