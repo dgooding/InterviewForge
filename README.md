@@ -23,7 +23,8 @@ InterviewForge is a production-ready, full-stack **AI-Powered Job Interview Prep
 ## Features
 
 1. **Landing page** — Hero, feature grid, testimonials, CTA  
-2. **Google sign-in + cloud save** — Supabase Auth; sessions/resume/streak sync across devices (guest mode still works offline)  
+2. **Privacy-first progress** — Guest data is **100% local** until optional Google/GitHub sign-in; then local merges to private Supabase account (RLS). Settings: export / delete.  
+
 3. **Dashboard** — Scores, streak, recommendations, recent sessions  
 4. **Job role selector** — Searchable roles + custom role input  
 5. **Resume upload & analysis** — Drag-and-drop PDF/TXT → strengths & talking points  

@@ -1,54 +1,12 @@
 /**
- * Client-side persistence via localStorage.
+ * Local-first persistence (localStorage).
  *
- * ============================================================
- * FUTURE: Supabase / Postgres migration path
- * ============================================================
- * When you're ready for multi-device sync and real auth:
- *
- * 1. Create a Supabase project and enable email auth.
- * 2. Add env vars from .env.example (NEXT_PUBLIC_SUPABASE_URL, etc.).
- * 3. Run the SQL schema below in the Supabase SQL editor.
- * 4. Replace getJSON/setJSON calls with supabase.from(...).select/insert.
- * 5. Keep the same TypeScript interfaces in lib/types.ts.
- *
- * Suggested schema:
- *
- *   create table profiles (
- *     id uuid primary key references auth.users(id),
- *     email text,
- *     name text,
- *     streak int default 0,
- *     last_practice_date date,
- *     preferred_role text,
- *     created_at timestamptz default now()
- *   );
- *
- *   create table interview_sessions (
- *     id uuid primary key default gen_random_uuid(),
- *     user_id uuid references profiles(id) on delete cascade,
- *     role text not null,
- *     mode text not null,
- *     company_style text,
- *     started_at timestamptz not null,
- *     completed_at timestamptz,
- *     overall_score numeric,
- *     status text not null,
- *     answers jsonb not null default '[]'
- *   );
- *
- *   create table resume_analyses (
- *     id uuid primary key default gen_random_uuid(),
- *     user_id uuid references profiles(id) on delete cascade,
- *     file_name text,
- *     summary text,
- *     strengths jsonb,
- *     talking_points jsonb,
- *     suggested_roles jsonb,
- *     uploaded_at timestamptz default now()
- *   );
- *
- *   -- Enable RLS and policies scoped to auth.uid()
+ * PRIVACY CONTRACT:
+ * - Anonymous/guest progress lives ONLY here until the user explicitly
+ *   signs in (Google via Supabase). No progress sync runs for guests.
+ * - AI feedback/resume API calls may send the text the user submitted for
+ *   that one request; they do not store long-lived progress on our servers.
+ * - Theme preference is device-local and never synced.
  */
 
 import type {
@@ -64,6 +22,10 @@ const KEYS = {
   resume: "if_resume",
   selectedRole: "if_selected_role",
   theme: "if_theme",
+  /** User dismissed the "Save progress across devices" banner */
+  bannerDismissed: "if_sync_banner_dismissed",
+  /** Last successful cloud pull timestamp (ISO) */
+  lastCloudSync: "if_last_cloud_sync",
 } as const;
 
 function isBrowser(): boolean {
@@ -90,13 +52,18 @@ function setJSON<T>(key: string, value: T): void {
   }
 }
 
+function removeKey(key: string): void {
+  if (!isBrowser()) return;
+  localStorage.removeItem(key);
+}
+
 export function getUser(): User | null {
   return getJSON<User | null>(KEYS.user, null);
 }
 
 export function setUser(user: User | null): void {
   if (user === null) {
-    if (isBrowser()) localStorage.removeItem(KEYS.user);
+    removeKey(KEYS.user);
     return;
   }
   setJSON(KEYS.user, user);
@@ -128,7 +95,7 @@ export function getResumeAnalysis(): ResumeAnalysis | null {
 
 export function setResumeAnalysis(analysis: ResumeAnalysis | null): void {
   if (analysis === null) {
-    if (isBrowser()) localStorage.removeItem(KEYS.resume);
+    removeKey(KEYS.resume);
     return;
   }
   setJSON(KEYS.resume, analysis);
@@ -153,6 +120,34 @@ export function setTheme(theme: "light" | "dark"): void {
   }
 }
 
+export function isSyncBannerDismissed(): boolean {
+  return getJSON<boolean>(KEYS.bannerDismissed, false);
+}
+
+export function setSyncBannerDismissed(dismissed: boolean): void {
+  setJSON(KEYS.bannerDismissed, dismissed);
+}
+
+export function getLastCloudSync(): string | null {
+  return getJSON<string | null>(KEYS.lastCloudSync, null);
+}
+
+export function setLastCloudSync(iso: string | null): void {
+  if (iso === null) removeKey(KEYS.lastCloudSync);
+  else setJSON(KEYS.lastCloudSync, iso);
+}
+
+/** Wipe practice data only (keeps theme + banner prefs). */
+export function clearProgressData(): void {
+  if (!isBrowser()) return;
+  removeKey(KEYS.user);
+  removeKey(KEYS.sessions);
+  removeKey(KEYS.resume);
+  removeKey(KEYS.selectedRole);
+  removeKey(KEYS.lastCloudSync);
+}
+
+/** Nuclear: remove all InterviewForge keys including theme. */
 export function clearAllData(): void {
   if (!isBrowser()) return;
   Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
@@ -165,6 +160,21 @@ export function loadAppState(): AppState {
     resumeAnalysis: getResumeAnalysis(),
     selectedRole: getSelectedRole(),
     theme: getTheme(),
+  };
+}
+
+/** Snapshot used for JSON export (user-owned data). */
+export function exportProgressSnapshot() {
+  return {
+    exportedAt: new Date().toISOString(),
+    app: "InterviewForge",
+    version: 1,
+    privacy:
+      "This file was exported by you from InterviewForge. Keep it private.",
+    user: getUser(),
+    sessions: getSessions(),
+    resumeAnalysis: getResumeAnalysis(),
+    selectedRole: getSelectedRole(),
   };
 }
 
@@ -196,4 +206,13 @@ export function updateStreak(user: User): User {
   };
   setUser(updated);
   return updated;
+}
+
+export function hasLocalProgress(): boolean {
+  return (
+    getSessions().length > 0 ||
+    getResumeAnalysis() !== null ||
+    Boolean(getSelectedRole()) ||
+    (getUser()?.streak ?? 0) > 0
+  );
 }

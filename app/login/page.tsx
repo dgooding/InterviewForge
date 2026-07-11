@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Cloud, HardDrive } from "lucide-react";
+import { Sparkles, Loader2, Cloud, HardDrive, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,29 +15,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { signInWithGoogle, isSupabaseConfigured } from "@/lib/auth";
+import {
+  signInWithGoogle,
+  signInWithGitHub,
+  isSupabaseConfigured,
+} from "@/lib/auth";
 import { useApp } from "@/components/providers";
+import { hasLocalProgress } from "@/lib/storage";
 
 function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isCloudUser, cloudEnabled } = useApp();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"google" | "github" | null>(null);
   const configured = isSupabaseConfigured() || cloudEnabled;
+  const willMigrate = typeof window !== "undefined" && hasLocalProgress();
 
   useEffect(() => {
     if (isCloudUser) router.replace("/dashboard");
   }, [isCloudUser, router]);
 
   const onGoogle = async () => {
-    setLoading(true);
+    setLoading("google");
     const res = await signInWithGoogle();
     if (res.error) {
       toast.error(res.error);
-      setLoading(false);
-      return;
+      setLoading(null);
     }
-    // Browser redirects to Google — keep spinner
+  };
+
+  const onGitHub = async () => {
+    setLoading("github");
+    const res = await signInWithGitHub();
+    if (res.error) {
+      toast.error(res.error);
+      setLoading(null);
+    }
   };
 
   const oauthError = searchParams.get("error");
@@ -60,10 +73,10 @@ function LoginInner() {
 
         <Card className="border-primary/10 shadow-glow">
           <CardHeader>
-            <CardTitle>Sign in to save progress</CardTitle>
+            <CardTitle>Save progress across devices</CardTitle>
             <CardDescription>
-              Use Google to sync interviews, resume insights, streak, and scores
-              across devices. You can still practice offline as a guest.
+              Optional. Guest mode keeps everything on this browser only.
+              Signing in uploads your local progress to your private account.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -73,14 +86,22 @@ function LoginInner() {
               </p>
             )}
 
+            {willMigrate && (
+              <p className="flex gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                We found local practice data on this device. After sign-in it
+                will be merged into your account (never shared with other users).
+              </p>
+            )}
+
             <Button
               type="button"
               variant="gradient"
               className="w-full"
-              disabled={loading || !configured}
+              disabled={!!loading || !configured}
               onClick={onGoogle}
             >
-              {loading ? (
+              {loading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <GoogleIcon />
@@ -88,25 +109,46 @@ function LoginInner() {
               Continue with Google
             </Button>
 
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={!!loading || !configured}
+              onClick={onGitHub}
+            >
+              {loading === "github" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <GitHubIcon />
+              )}
+              Continue with GitHub
+            </Button>
+
             {!configured && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                Google login is not configured on this deployment yet. Add
-                Supabase env vars and enable the Google provider (see README →
-                Google Auth). Guest mode still works.
+                Cloud login isn&apos;t configured on this deployment yet. Add
+                Supabase env vars (README). Guest mode still works with full
+                local privacy.
               </p>
             )}
 
             <div className="grid gap-2 rounded-xl border border-border/60 p-3 text-xs text-muted-foreground">
               <p className="flex items-center gap-2 font-medium text-foreground">
                 <Cloud className="h-3.5 w-3.5 text-primary" />
-                With Google
+                Signed in
               </p>
-              <p>Sessions, resume analysis, role, and streak sync to your account.</p>
+              <p>
+                Sessions, resume insights, role, and streak sync privately under
+                your account (Supabase RLS).
+              </p>
               <p className="mt-2 flex items-center gap-2 font-medium text-foreground">
                 <HardDrive className="h-3.5 w-3.5 text-primary" />
-                Guest (this device only)
+                Guest
               </p>
-              <p>Progress stays in your browser until you sign in — then it merges.</p>
+              <p>
+                100% local. No progress is sent to our database until you sign
+                in.
+              </p>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
@@ -119,8 +161,12 @@ function LoginInner() {
               Continue as guest
             </Button>
             <p className="text-center text-sm text-muted-foreground">
+              <Link href="/settings" className="text-primary hover:underline">
+                Privacy &amp; data settings
+              </Link>
+              {" · "}
               <Link href="/" className="text-primary hover:underline">
-                Back to home
+                Home
               </Link>
             </p>
           </CardFooter>
@@ -149,6 +195,14 @@ function GoogleIcon() {
         fill="currentColor"
         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
       />
+    </svg>
+  );
+}
+
+function GitHubIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.43 7.86 10.96.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.3-1.7-1.3-1.7-1.06-.73.08-.72.08-.72 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.11-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 2.9-.39c.98 0 1.97.13 2.9.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.7.42.36.79 1.08.79 2.18 0 1.57-.01 2.84-.01 3.23 0 .31.21.68.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.74 18.27.5 12 .5z" />
     </svg>
   );
 }

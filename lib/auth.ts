@@ -3,21 +3,39 @@ import type { User } from "./types";
 import { getUser, setUser } from "./storage";
 import {
   signInWithGoogle as cloudGoogle,
+  signInWithGitHub as cloudGitHub,
   signOutCloud,
 } from "./cloud-sync";
 import { isSupabaseConfigured } from "./supabase/client";
 
 /**
- * Local guest profile + Google/Supabase cloud auth helpers.
- * Guest progress stays in localStorage; Google users sync to Supabase.
+ * Guest identity (local only) + optional OAuth helpers.
+ * Guest progress is never uploaded until sign-in succeeds.
  */
 
 const DEFAULT_NAME = "Candidate";
 
 export function ensureLocalUser(): User {
   const existing = getUser();
+  // If we still have a cloud-shaped user but no session, demote carefully is
+  // handled by providers. Here we only create a guest if empty.
   if (existing) return existing;
 
+  const user: User = {
+    id: `local-${uuidv4()}`,
+    email: "local@interviewforge.app",
+    name: DEFAULT_NAME,
+    isGuest: true,
+    isCloud: false,
+    createdAt: new Date().toISOString(),
+    streak: 0,
+    lastPracticeDate: null,
+  };
+  setUser(user);
+  return user;
+}
+
+export function createFreshGuest(): User {
   const user: User = {
     id: `local-${uuidv4()}`,
     email: "local@interviewforge.app",
@@ -43,13 +61,17 @@ export function updateUserProfile(partial: Partial<User>): User {
   return updated;
 }
 
-export function resetToGuest(): User {
+export function resetToGuest(preserveProgress = true): User {
   if (typeof window !== "undefined") {
-    // Keep sessions/resume so they can merge on next Google login;
-    // only clear the identity slot if it was a cloud user.
+    // Keep sessions/resume/role so practice history stays on-device after logout
+    if (!preserveProgress) {
+      localStorage.removeItem("if_sessions");
+      localStorage.removeItem("if_resume");
+      localStorage.removeItem("if_selected_role");
+    }
     localStorage.removeItem("if_user");
   }
-  return ensureLocalUser();
+  return createFreshGuest();
 }
 
 export async function signInWithGoogle(): Promise<{ error?: string }> {
@@ -62,9 +84,19 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
   return cloudGoogle();
 }
 
+export async function signInWithGitHub(): Promise<{ error?: string }> {
+  if (!isSupabaseConfigured()) {
+    return {
+      error:
+        "GitHub login needs Supabase. Add env vars and enable the GitHub provider.",
+    };
+  }
+  return cloudGitHub();
+}
+
 export async function signOut(): Promise<void> {
   await signOutCloud();
-  resetToGuest();
+  resetToGuest(true);
 }
 
 export { isSupabaseConfigured };

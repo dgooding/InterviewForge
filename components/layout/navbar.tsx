@@ -19,6 +19,7 @@ import {
   LogIn,
   LogOut,
   Cloud,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ const navItems = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/questions", label: "Questions", icon: BookOpen },
   { href: "/history", label: "History", icon: History },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Navbar() {

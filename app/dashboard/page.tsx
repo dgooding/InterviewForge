@@ -81,16 +81,19 @@ export default function DashboardPage() {
             <p className="mt-1 text-muted-foreground">
               Here&apos;s your interview prep command center.
               {user?.isCloud && !user.isGuest
-                ? " Progress syncs with your Google account."
-                : " Sign in with Google to save progress across devices."}
+                ? " Progress syncs privately to your account."
+                : " Progress is saved on this device. Sign in anytime to sync."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {!(user?.isCloud && !user.isGuest) && (
               <Button asChild variant="outline">
-                <Link href="/login">Sign in with Google</Link>
+                <Link href="/login">Save across devices</Link>
               </Button>
             )}
+            <Button asChild variant="outline">
+              <Link href="/settings">Privacy</Link>
+            </Button>
             <Button asChild variant="gradient">
               <Link href="/interview">
                 Start practice
