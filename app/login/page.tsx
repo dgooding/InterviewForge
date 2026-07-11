@@ -130,7 +130,9 @@ function LoginInner() {
           <CardContent className="space-y-4">
             {oauthError && (
               <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
-                Sign-in was cancelled or failed. Try the email magic link below.
+                {searchParams.get("message")
+                  ? decodeURIComponent(searchParams.get("message")!)
+                  : "Sign-in was cancelled or failed. Try Google again, or use the email magic link below."}
               </p>
             )}
 

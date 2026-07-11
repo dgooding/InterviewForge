@@ -559,11 +559,13 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
       ? `${window.location.origin}/auth/callback`
       : undefined;
 
+  // skipBrowserRedirect: true so we navigate exactly once after PKCE
+  // code_verifier is written to cookies by @supabase/ssr.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo,
-      skipBrowserRedirect: false,
+      skipBrowserRedirect: true,
       queryParams: {
         access_type: "offline",
         prompt: "select_account",
@@ -585,11 +587,13 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
     }
     return { error: msg };
   }
-  // If Supabase returned a URL but didn't navigate (some browsers), go there
+
   if (data?.url && typeof window !== "undefined") {
     window.location.assign(data.url);
+    return {};
   }
-  return {};
+
+  return { error: "Could not start Google sign-in. Try again or use email." };
 }
 
 /** Passwordless email magic link (works without Google Cloud setup). */
@@ -641,7 +645,7 @@ export async function signInWithGitHub(): Promise<{ error?: string }> {
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
-    options: { redirectTo, skipBrowserRedirect: false },
+    options: { redirectTo, skipBrowserRedirect: true },
   });
 
   if (error) {
@@ -658,10 +662,13 @@ export async function signInWithGitHub(): Promise<{ error?: string }> {
     }
     return { error: msg };
   }
+
   if (data?.url && typeof window !== "undefined") {
     window.location.assign(data.url);
+    return {};
   }
-  return {};
+
+  return { error: "Could not start GitHub sign-in. Try again or use email." };
 }
 
 export async function signOutCloud(): Promise<void> {
