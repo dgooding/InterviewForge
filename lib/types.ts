@@ -29,6 +29,9 @@ export interface User {
   email: string;
   name: string;
   isGuest: boolean;
+  /** True when signed in with Google/Supabase — progress syncs to the cloud */
+  isCloud?: boolean;
+  avatarUrl?: string | null;
   createdAt: string;
   streak: number;
   lastPracticeDate: string | null;

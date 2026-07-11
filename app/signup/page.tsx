@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Auth removed — redirect legacy /signup links to the app. */
+/** Signup redirects to login (Google is the account path). */
 export default function SignupPage() {
-  redirect("/dashboard");
+  redirect("/login");
 }

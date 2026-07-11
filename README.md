@@ -23,7 +23,7 @@ InterviewForge is a production-ready, full-stack **AI-Powered Job Interview Prep
 ## Features
 
 1. **Landing page** — Hero, feature grid, testimonials, CTA  
-2. **No authentication** — Open the app immediately; progress saved in localStorage  
+2. **Google sign-in + cloud save** — Supabase Auth; sessions/resume/streak sync across devices (guest mode still works offline)  
 3. **Dashboard** — Scores, streak, recommendations, recent sessions  
 4. **Job role selector** — Searchable roles + custom role input  
 5. **Resume upload & analysis** — Drag-and-drop PDF/TXT → strengths & talking points  
@@ -50,14 +50,67 @@ InterviewForge is a production-ready, full-stack **AI-Powered Job Interview Prep
 | PDF | jsPDF + jspdf-autotable |
 | Voice | Web Speech API |
 | AI | **SpaceXAI / xAI** (`XAI_API_KEY`) with local heuristic fallback |
-| Persistence | localStorage (Supabase schema documented in code) |
+| Auth | Supabase Auth (Google OAuth) |
+| Persistence | localStorage always + Supabase Postgres when signed in |
 
 ### Why these decisions?
 
-- **No auth barrier** — Instant demo experience; a local profile is auto-created for streak/PDF labels only.  
-- **localStorage first** — Zero-setup demo; easy to pitch without a backend. Migration path + SQL schema live in `lib/storage.ts`.  
-- **Heuristic AI + optional xAI** — Works offline out of the box; add `XAI_API_KEY` for Grok-powered feedback.  
+- **Google login optional** — Guest mode works immediately; sign in to sync progress.  
+- **localStorage + cloud** — Offline-first UI with Supabase as the source of truth when authenticated.  
+- **Heuristic AI + optional xAI** — Works offline; add `XAI_API_KEY` for Grok-powered feedback.  
 - **Deep blue / purple palette** — Premium SaaS aesthetic with glass cards and soft glows.
+
+---
+
+## Google login & cloud progress (setup)
+
+Code is ready. You need a free Supabase project + Google OAuth credentials:
+
+### 1. Supabase project
+
+1. Create a project at [supabase.com](https://supabase.com).  
+2. **SQL Editor** → paste and run [`supabase/schema.sql`](./supabase/schema.sql).  
+3. **Project Settings → API** → copy **Project URL** and **anon public** key.
+
+### 2. Google Cloud OAuth
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials.  
+2. Create **OAuth 2.0 Client ID** (Web application).  
+3. Authorized redirect URI (from Supabase):  
+   `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`  
+4. Copy Client ID + Client Secret.
+
+### 3. Enable Google in Supabase
+
+1. Supabase → **Authentication → Providers → Google** → enable.  
+2. Paste Client ID + Secret.  
+3. **Authentication → URL Configuration**:  
+   - **Site URL:** `https://interviewforge-zeta.vercel.app` (and `http://localhost:3000` for local)  
+   - **Redirect URLs:**  
+     - `http://localhost:3000/auth/callback`  
+     - `https://interviewforge-zeta.vercel.app/auth/callback`
+
+### 4. Environment variables
+
+Local (`.env.local`) and **Vercel → Project → Settings → Environment Variables**:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_APP_URL=https://interviewforge-zeta.vercel.app
+```
+
+Redeploy after adding env vars. Then open **/login** → **Continue with Google**.
+
+What syncs when signed in:
+
+| Data | Cloud table |
+|------|-------------|
+| Profile, streak, preferred role | `profiles` |
+| Mock interview sessions + answers | `interview_sessions` |
+| Resume analysis | `resume_analyses` |
+
+Guest practice on a device **merges into your account** the first time you sign in on that browser.
 
 ---
 
@@ -98,11 +151,13 @@ Copy `.env.example` → `.env.local`:
 
 ```env
 XAI_API_KEY=your_xai_api_key_here
-# XAI_MODEL=grok-4.5
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-Without `XAI_API_KEY`, resume analysis and answer feedback use the built-in local coaching engine (always available).
+Without `XAI_API_KEY`, feedback uses the local coaching engine.  
+Without Supabase vars, the app still runs in **guest / localStorage** mode (no Google button effect until configured).
 
 ---
 

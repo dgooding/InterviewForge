@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Flame,
   LayoutDashboard,
@@ -16,9 +16,15 @@ import {
   Menu,
   X,
   Sparkles,
+  LogIn,
+  LogOut,
+  Cloud,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/components/providers";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +40,41 @@ const navItems = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { theme, toggleTheme, stats } = useApp();
+  const router = useRouter();
+  const {
+    theme,
+    toggleTheme,
+    stats,
+    user,
+    isCloudUser,
+    signOut,
+    cloudEnabled,
+  } = useApp();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
-  if (pathname === "/") return null;
+  if (pathname === "/" || pathname === "/login" || pathname.startsWith("/auth")) {
+    return null;
+  }
+
+  const initials =
+    user?.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "IF";
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      toast.success("Signed out. Local progress remains on this device.");
+      router.push("/");
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -81,6 +118,23 @@ export function Navbar() {
             {stats.streak} day streak
           </div>
 
+          {isCloudUser ? (
+            <Badge
+              variant="secondary"
+              className="hidden gap-1 sm:inline-flex"
+              title="Progress syncs to your Google account"
+            >
+              <Cloud className="h-3 w-3" />
+              Synced
+            </Badge>
+          ) : (
+            cloudEnabled && (
+              <Badge variant="outline" className="hidden gap-1 sm:inline-flex">
+                Guest
+              </Badge>
+            )
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -93,6 +147,41 @@ export function Navbar() {
               <Moon className="h-4 w-4" />
             )}
           </Button>
+
+          {isCloudUser ? (
+            <div className="hidden items-center gap-2 sm:flex">
+              <Avatar className="h-8 w-8">
+                {user?.avatarUrl ? (
+                  <AvatarImage src={user.avatarUrl} alt={user.name} />
+                ) : null}
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <span className="max-w-[100px] truncate text-sm font-medium">
+                {user?.name}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              asChild
+              size="sm"
+              variant="gradient"
+              className="hidden sm:inline-flex"
+            >
+              <Link href="/login">
+                <LogIn className="h-4 w-4" />
+                Sign in
+              </Link>
+            </Button>
+          )}
 
           <Button
             variant="ghost"
@@ -128,6 +217,28 @@ export function Navbar() {
                 </Link>
               );
             })}
+            {isCloudUser ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  void handleSignOut();
+                }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign in with Google
+              </Link>
+            )}
           </nav>
         </div>
       )}

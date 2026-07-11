@@ -105,6 +105,9 @@ export default function LandingPage() {
             <Moon className="h-4 w-4" />
           )}
         </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/login">Sign in</Link>
+        </Button>
         <Button asChild variant="gradient" size="sm">
           <Link href="/dashboard">Open app</Link>
         </Button>
@@ -141,17 +144,17 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" variant="gradient" className="gap-2">
-              <Link href="/dashboard">
-                Start Free Prep
+              <Link href="/login">
+                Sign in with Google
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/interview">Jump into interview</Link>
+              <Link href="/interview">Try as guest</Link>
             </Button>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            {qCount}+ questions · No sign-up required · Works offline with local AI
+            {qCount}+ questions · Google sync for progress · Guest mode works offline
           </p>
         </motion.div>
 
