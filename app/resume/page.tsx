@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import {
@@ -11,6 +12,11 @@ import {
   CheckCircle2,
   Lightbulb,
   Briefcase,
+  AlertTriangle,
+  MessageSquareQuote,
+  RefreshCw,
+  Trash2,
+  Mic,
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -26,83 +32,89 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import type { ResumeAnalysis } from "@/lib/types";
+import { generateLocalResumeAnalysis } from "@/lib/ai-feedback";
+import { extractTextFromFile } from "@/lib/pdf-extract";
 import { cn } from "@/lib/utils";
 
-async function extractTextFromPdf(file: File): Promise<string> {
-  // Prefer pdfjs when available; fall back to raw text read for .txt
-  if (file.type === "text/plain" || file.name.endsWith(".txt")) {
-    return file.text();
-  }
-
-  try {
-    const pdfjs = await import("pdfjs-dist");
-    // Use CDN worker for pdfjs in browser
-    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-    const data = new Uint8Array(await file.arrayBuffer());
-    const doc = await pdfjs.getDocument({ data }).promise;
-    const pages: string[] = [];
-    const max = Math.min(doc.numPages, 8);
-    for (let i = 1; i <= max; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      const text = content.items
-        .map((item) => ("str" in item ? String(item.str) : ""))
-        .join(" ");
-      pages.push(text);
-    }
-    return pages.join("\n");
-  } catch (err) {
-    console.warn("PDF parse failed", err);
-    // Last resort: try reading as text (won't work well for binary PDFs)
-    try {
-      return await file.text();
-    } catch {
-      return "";
-    }
-  }
-}
-
 export default function ResumePage() {
-  const { resumeAnalysis, setResumeAnalysis } = useApp();
+  const { resumeAnalysis, setResumeAnalysis, setSelectedRole } = useApp();
   const [loading, setLoading] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [fileName, setFileName] = useState("pasted-resume.txt");
+  const [extractHint, setExtractHint] = useState<string | null>(null);
 
-  const analyze = async (text: string, name: string) => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/resume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, fileName: name }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Analysis failed");
+  const analyze = useCallback(
+    async (text: string, name: string) => {
+      if (text.trim().length < 40) {
+        toast.error("Need at least ~40 characters of resume content.");
         return;
       }
-      const analysis: ResumeAnalysis = {
-        id: uuidv4(),
-        fileName: name,
-        uploadedAt: new Date().toISOString(),
-        summary: data.analysis.summary,
-        strengths: data.analysis.strengths,
-        talkingPoints: data.analysis.talkingPoints,
-        suggestedRoles: data.analysis.suggestedRoles,
-        rawTextExcerpt: text.slice(0, 500),
-      };
-      setResumeAnalysis(analysis);
-      toast.success(
-        data.source === "xai"
-          ? "Resume analyzed with SpaceXAI"
-          : "Resume analyzed (local AI engine)"
-      );
-    } catch {
-      toast.error("Network error analyzing resume");
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      setExtractHint(null);
+
+      try {
+        const res = await fetch("/api/resume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, fileName: name }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          const local = generateLocalResumeAnalysis(text, name);
+          const analysis: ResumeAnalysis = {
+            id: uuidv4(),
+            fileName: name,
+            uploadedAt: new Date().toISOString(),
+            ...local,
+            rawTextExcerpt: text.slice(0, 500),
+            source: "offline",
+          };
+          setResumeAnalysis(analysis);
+          toast.message("Used offline coach (API unavailable)");
+          return;
+        }
+
+        const a = data.analysis;
+        const analysis: ResumeAnalysis = {
+          id: uuidv4(),
+          fileName: name,
+          uploadedAt: new Date().toISOString(),
+          summary: a.summary,
+          strengths: a.strengths || [],
+          weaknesses: a.weaknesses || [],
+          experienceHighlights: a.experienceHighlights || [],
+          talkingPoints: a.talkingPoints || [],
+          sampleAnswers: a.sampleAnswers || [],
+          suggestedRoles: a.suggestedRoles || [],
+          rawTextExcerpt: text.slice(0, 500),
+          source: data.source,
+        };
+        setResumeAnalysis(analysis);
+
+        if (data.source === "xai") {
+          toast.success("Resume analyzed with AI");
+        } else {
+          toast.success("Resume analyzed (local coaching engine)");
+        }
+      } catch {
+        const local = generateLocalResumeAnalysis(text, name);
+        const analysis: ResumeAnalysis = {
+          id: uuidv4(),
+          fileName: name,
+          uploadedAt: new Date().toISOString(),
+          ...local,
+          rawTextExcerpt: text.slice(0, 500),
+          source: "offline",
+        };
+        setResumeAnalysis(analysis);
+        toast.message("Network offline — used local coaching engine");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setResumeAnalysis]
+  );
 
   const onDrop = useCallback(
     async (files: File[]) => {
@@ -113,18 +125,19 @@ export default function ResumePage() {
         return;
       }
       setFileName(file.name);
-      toast.message("Extracting text…");
-      const text = await extractTextFromPdf(file);
+      toast.message("Extracting text from resume…");
+      const { text, error } = await extractTextFromFile(file);
+      if (error) setExtractHint(error);
       if (!text || text.trim().length < 40) {
         toast.error(
-          "Couldn't extract text from that PDF. Paste key bullets below instead."
+          error ||
+            "Couldn't extract text. Paste key bullets below instead."
         );
         return;
       }
       await analyze(text, file.name);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [analyze]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -135,35 +148,60 @@ export default function ResumePage() {
     },
     maxFiles: 1,
     disabled: loading,
+    multiple: false,
   });
+
+  const clearAnalysis = () => {
+    setResumeAnalysis(null);
+    setPasteText("");
+    setExtractHint(null);
+    toast.message("Cleared — upload a new resume anytime");
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Resume Upload & Analysis
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Drop a PDF resume for AI strengths, talking points, and role suggestions.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Resume Intelligence
+            </h1>
+            <p className="mt-1 text-muted-foreground">
+              Upload a PDF resume for strengths, gaps, experience highlights,
+              talking points, and sample interview answers.
+            </p>
+          </div>
+          {resumeAnalysis && (
+            <Button variant="outline" size="sm" onClick={clearAnalysis}>
+              <Trash2 className="h-4 w-4" />
+              Clear & re-upload
+            </Button>
+          )}
+        </div>
 
         <Card className="mt-8">
           <CardContent className="pt-6">
             <div
               {...getRootProps()}
+              role="button"
+              tabIndex={0}
+              aria-label="Upload resume PDF or text file"
               className={cn(
-                "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-14 transition-colors",
+                "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-14 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isDragActive
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/40 hover:bg-muted/30",
                 loading && "pointer-events-none opacity-60"
               )}
             >
-              <input {...getInputProps()} />
+              <input {...getInputProps()} aria-hidden />
               {loading ? (
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <Loader2
+                  className="h-10 w-10 animate-spin text-primary"
+                  aria-hidden
+                />
               ) : (
-                <Upload className="h-10 w-10 text-primary" />
+                <Upload className="h-10 w-10 text-primary" aria-hidden />
               )}
               <p className="mt-4 font-medium">
                 {isDragActive
@@ -171,30 +209,64 @@ export default function ResumePage() {
                   : "Drag & drop PDF or click to browse"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                PDF or TXT · max 4MB · processed in-browser then analyzed server-side
+                PDF or TXT · max 4MB · parsed in-browser, then analyzed
               </p>
+              {loading && (
+                <p className="mt-3 text-sm text-primary" role="status">
+                  Analyzing resume…
+                </p>
+              )}
             </div>
 
+            {extractHint && (
+              <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+                {extractHint}
+              </p>
+            )}
+
             <div className="mt-6 space-y-2">
-              <p className="text-sm font-medium">Or paste resume text</p>
+              <label htmlFor="resume-paste" className="text-sm font-medium">
+                Or paste resume text
+              </label>
               <Textarea
+                id="resume-paste"
                 placeholder="Paste experience bullets, skills, education…"
                 value={pasteText}
                 onChange={(e) => setPasteText(e.target.value)}
                 className="min-h-[140px]"
+                disabled={loading}
               />
-              <Button
-                variant="outline"
-                disabled={loading || pasteText.trim().length < 40}
-                onClick={() => analyze(pasteText, fileName)}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  disabled={loading || pasteText.trim().length < 40}
+                  onClick={() => analyze(pasteText, fileName)}
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  Analyze pasted text
+                </Button>
+                {resumeAnalysis && (
+                  <Button
+                    variant="ghost"
+                    disabled={loading}
+                    onClick={() =>
+                      analyze(
+                        pasteText.length >= 40
+                          ? pasteText
+                          : resumeAnalysis.rawTextExcerpt || pasteText,
+                        resumeAnalysis.fileName
+                      )
+                    }
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Re-analyze
+                  </Button>
                 )}
-                Analyze pasted text
-              </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -208,13 +280,22 @@ export default function ResumePage() {
             <Card className="border-primary/20">
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
+                  <FileText className="h-5 w-5 text-primary" aria-hidden />
                   <CardTitle className="text-lg">
                     {resumeAnalysis.fileName}
                   </CardTitle>
                   <Badge variant="secondary">
-                    {new Date(resumeAnalysis.uploadedAt).toLocaleDateString()}
+                    {new Date(resumeAnalysis.uploadedAt).toLocaleString()}
                   </Badge>
+                  {resumeAnalysis.source && (
+                    <Badge variant="outline" className="capitalize">
+                      {resumeAnalysis.source === "xai"
+                        ? "AI enhanced"
+                        : resumeAnalysis.source === "offline"
+                          ? "Offline coach"
+                          : "Local coach"}
+                    </Badge>
+                  )}
                 </div>
                 <CardDescription className="text-base leading-relaxed">
                   {resumeAnalysis.summary}
@@ -248,13 +329,16 @@ export default function ResumePage() {
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Lightbulb className="h-4 w-4 text-amber-500" />
-                    Talking points
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    Gaps & improvements
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {resumeAnalysis.talkingPoints.map((s, i) => (
+                    {(resumeAnalysis.weaknesses?.length
+                      ? resumeAnalysis.weaknesses
+                      : ["No major gaps flagged — keep quantifying impact."]
+                    ).map((s, i) => (
                       <li
                         key={i}
                         className="flex gap-2 text-sm text-muted-foreground"
@@ -271,18 +355,116 @@ export default function ResumePage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Experience highlights
+                </CardTitle>
+                <CardDescription>
+                  Pulled from your resume for quick interview prep
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {(resumeAnalysis.experienceHighlights?.length
+                    ? resumeAnalysis.experienceHighlights
+                    : []
+                  ).map((h, i) => (
+                    <li
+                      key={i}
+                      className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                    >
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  Talking points
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {resumeAnalysis.talkingPoints.map((s, i) => (
+                    <li
+                      key={i}
+                      className="flex gap-2 text-sm text-muted-foreground"
+                    >
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {(resumeAnalysis.sampleAnswers?.length ?? 0) > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MessageSquareQuote className="h-4 w-4 text-primary" />
+                    Sample interview answers
+                  </CardTitle>
+                  <CardDescription>
+                    Use as outlines — personalize with your metrics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {resumeAnalysis.sampleAnswers.map((sa, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-border/60 p-4"
+                    >
+                      <p className="text-sm font-medium text-primary">
+                        {sa.prompt}
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {sa.answer}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
                   <Briefcase className="h-4 w-4 text-primary" />
                   Suggested roles
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
                 {resumeAnalysis.suggestedRoles.map((r) => (
-                  <Badge key={r} variant="secondary">
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setSelectedRole(r);
+                      toast.success(`Target role set: ${r}`);
+                    }}
+                  >
                     {r}
-                  </Badge>
+                  </Button>
                 ))}
               </CardContent>
             </Card>
+
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
+              <Button asChild variant="gradient">
+                <Link href="/interview">
+                  <Mic className="h-4 w-4" />
+                  Practice with mock interview
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/roles">Review all roles</Link>
+              </Button>
+            </div>
           </motion.div>
         )}
       </motion.div>

@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { generateLocalResumeAnalysis } from "@/lib/ai-feedback";
+import {
+  generateLocalResumeAnalysis,
+  type LocalResumeResult,
+} from "@/lib/ai-feedback";
 
 /**
  * POST /api/resume
  * Body: { text, fileName }
- * Analyzes resume text for strengths & talking points.
- * Uses SpaceXAI when XAI_API_KEY is set.
+ * Analyzes resume for strengths, weaknesses, highlights, talking points, sample answers.
+ * Uses SpaceXAI/xAI when XAI_API_KEY is set; always has local fallback.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const excerpt = text.slice(0, 8000);
+    const excerpt = text.slice(0, 10000);
     const local = generateLocalResumeAnalysis(excerpt, fileName);
     const apiKey = process.env.XAI_API_KEY;
 
@@ -45,13 +48,17 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are a career coach. Analyze the resume text and return ONLY JSON:
+            content: `You are an expert career coach and interviewer. Analyze the resume and return ONLY valid JSON:
 {
   "summary": string,
   "strengths": string[3-5],
-  "talkingPoints": string[3-5],
+  "weaknesses": string[2-4],
+  "experienceHighlights": string[3-6],
+  "talkingPoints": string[3-6],
+  "sampleAnswers": [{"prompt": string, "answer": string}] (2-4 items),
   "suggestedRoles": string[2-5]
-}`,
+}
+Be specific, constructive, and interview-oriented. Weaknesses should be resume/prep gaps, not personal insults.`,
           },
           {
             role: "user",
@@ -62,17 +69,38 @@ export async function POST(req: NextRequest) {
       });
 
       const raw = completion.choices[0]?.message?.content || "{}";
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw) as Partial<LocalResumeResult>;
 
-      return NextResponse.json({
-        analysis: {
-          summary: parsed.summary || local.summary,
-          strengths: parsed.strengths || local.strengths,
-          talkingPoints: parsed.talkingPoints || local.talkingPoints,
-          suggestedRoles: parsed.suggestedRoles || local.suggestedRoles,
-        },
-        source: "xai",
-      });
+      const analysis: LocalResumeResult = {
+        summary: parsed.summary || local.summary,
+        strengths:
+          Array.isArray(parsed.strengths) && parsed.strengths.length
+            ? parsed.strengths
+            : local.strengths,
+        weaknesses:
+          Array.isArray(parsed.weaknesses) && parsed.weaknesses.length
+            ? parsed.weaknesses
+            : local.weaknesses,
+        experienceHighlights:
+          Array.isArray(parsed.experienceHighlights) &&
+          parsed.experienceHighlights.length
+            ? parsed.experienceHighlights
+            : local.experienceHighlights,
+        talkingPoints:
+          Array.isArray(parsed.talkingPoints) && parsed.talkingPoints.length
+            ? parsed.talkingPoints
+            : local.talkingPoints,
+        sampleAnswers:
+          Array.isArray(parsed.sampleAnswers) && parsed.sampleAnswers.length
+            ? parsed.sampleAnswers
+            : local.sampleAnswers,
+        suggestedRoles:
+          Array.isArray(parsed.suggestedRoles) && parsed.suggestedRoles.length
+            ? parsed.suggestedRoles
+            : local.suggestedRoles,
+      };
+
+      return NextResponse.json({ analysis, source: "xai" });
     } catch (err) {
       console.error("xAI resume error:", err);
       return NextResponse.json({ analysis: local, source: "local-fallback" });

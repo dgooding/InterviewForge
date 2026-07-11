@@ -19,6 +19,8 @@ import {
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
 import { getQuestions, COMPANY_STYLES } from "@/lib/questions";
+import { JOB_ROLES } from "@/lib/roles";
+import { generateLocalFeedback } from "@/lib/ai-feedback";
 import { average } from "@/lib/utils";
 import type {
   InterviewMode,
@@ -30,6 +32,7 @@ import type {
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -88,6 +91,7 @@ export default function InterviewPage() {
   const {
     user,
     selectedRole,
+    setSelectedRole,
     addOrUpdateSession,
     completeSessionStreak,
   } = useApp();
@@ -99,6 +103,7 @@ export default function InterviewPage() {
     (searchParams.get("mode") as InterviewMode) || "mixed"
   );
   const [companyStyle, setCompanyStyle] = useState<CompanyStyle>("google");
+  const [customRole, setCustomRole] = useState("");
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -108,6 +113,7 @@ export default function InterviewPage() {
   const [secondsLeft, setSecondsLeft] = useState(TIMER_SECONDS);
   const [recording, setRecording] = useState(false);
   const [interim, setInterim] = useState("");
+  const [feedbackSource, setFeedbackSource] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(Date.now());
   const recorderRef = useRef<ReturnType<typeof createSpeechRecorder>>(null);
@@ -140,8 +146,16 @@ export default function InterviewPage() {
 
   useEffect(() => () => clearTimer(), []);
 
+  const resolveRole = () => {
+    if (customRole.trim()) {
+      setSelectedRole(customRole.trim());
+      return customRole.trim();
+    }
+    return selectedRole || "Software Engineer";
+  };
+
   const startInterview = () => {
-    const role = selectedRole || "Software Engineer";
+    const role = resolveRole();
     const count = MODES.find((m) => m.id === mode)?.count ?? 10;
     const qs = getQuestions({
       mode,
@@ -213,6 +227,44 @@ export default function InterviewPage() {
     if (currentQ) speakText(currentQ.text);
   };
 
+  const applyFeedback = (
+    fb: AIFeedback,
+    text: string,
+    source: string
+  ) => {
+    if (!currentQ || !session) return;
+    setFeedback(fb);
+    setFeedbackSource(source);
+
+    const durationSeconds = Math.round(
+      (Date.now() - startedAtRef.current) / 1000
+    );
+    const entry: InterviewAnswer = {
+      questionId: currentQ.id,
+      questionText: currentQ.text,
+      answerText: text,
+      feedback: fb,
+      durationSeconds,
+      answeredAt: new Date().toISOString(),
+    };
+    const updated: InterviewSession = {
+      ...session,
+      answers: [...session.answers, entry],
+    };
+    setSession(updated);
+    addOrUpdateSession(updated);
+    setPhase("feedback");
+
+    if (fb.scores.overall >= 8.5) {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ["#6366f1", "#8b5cf6", "#a78bfa", "#34d399"],
+      });
+    }
+  };
+
   const submitAnswer = async () => {
     if (!currentQ || !session) return;
     const text = (answer + (interim ? ` ${interim}` : "")).trim();
@@ -236,41 +288,24 @@ export default function InterviewPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Feedback failed");
+        const local = generateLocalFeedback(
+          currentQ.text,
+          text,
+          session.mode
+        );
+        applyFeedback(local, text, "offline");
+        toast.message("Used offline scoring (API error)");
         return;
       }
-      const fb = data.feedback as AIFeedback;
-      setFeedback(fb);
-
-      const durationSeconds = Math.round(
-        (Date.now() - startedAtRef.current) / 1000
-      );
-      const entry: InterviewAnswer = {
-        questionId: currentQ.id,
-        questionText: currentQ.text,
-        answerText: text,
-        feedback: fb,
-        durationSeconds,
-        answeredAt: new Date().toISOString(),
-      };
-      const updated: InterviewSession = {
-        ...session,
-        answers: [...session.answers, entry],
-      };
-      setSession(updated);
-      addOrUpdateSession(updated);
-      setPhase("feedback");
-
-      if (fb.scores.overall >= 8.5) {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.7 },
-          colors: ["#6366f1", "#8b5cf6", "#a78bfa", "#34d399"],
-        });
-      }
+      applyFeedback(data.feedback as AIFeedback, text, data.source || "api");
     } catch {
-      toast.error("Could not get feedback");
+      const local = generateLocalFeedback(
+        currentQ.text,
+        text,
+        session.mode
+      );
+      applyFeedback(local, text, "offline");
+      toast.message("Network offline — used local coaching engine");
     } finally {
       setSubmitting(false);
     }
@@ -325,20 +360,57 @@ export default function InterviewPage() {
               Mock Interview Simulator
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Target role:{" "}
-              <span className="font-medium text-foreground">
-                {selectedRole || "Not set (defaults to Software Engineer)"}
-              </span>
-              {!selectedRole && (
+              Pick a role and mode, then answer timed questions with text or
+              voice. Progress saves automatically on this device.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              <p className="text-sm font-medium">Target role</p>
+              <div className="flex flex-wrap gap-2">
+                {JOB_ROLES.filter((r) => r.popular).map((r) => (
+                  <Button
+                    key={r.id}
+                    size="sm"
+                    type="button"
+                    variant={
+                      selectedRole === r.title && !customRole
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={() => {
+                      setCustomRole("");
+                      setSelectedRole(r.title);
+                    }}
+                  >
+                    {r.title}
+                  </Button>
+                ))}
                 <Button
-                  variant="link"
-                  className="h-auto p-0 pl-2"
+                  size="sm"
+                  type="button"
+                  variant="ghost"
                   onClick={() => router.push("/roles")}
                 >
-                  Choose role
+                  Browse all roles
                 </Button>
-              )}
-            </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  aria-label="Custom role"
+                  placeholder="Or type a custom role…"
+                  value={customRole}
+                  onChange={(e) => setCustomRole(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Active:{" "}
+                <span className="font-medium text-foreground">
+                  {customRole.trim() ||
+                    selectedRole ||
+                    "Software Engineer (default)"}
+                </span>
+              </p>
+            </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {MODES.map((m) => (
@@ -523,6 +595,19 @@ export default function InterviewPage() {
 
             {phase === "feedback" && feedback && (
               <>
+                {feedbackSource && (
+                  <p className="text-xs text-muted-foreground">
+                    Feedback source:{" "}
+                    {feedbackSource === "xai"
+                      ? "AI enhanced"
+                      : feedbackSource === "offline"
+                        ? "Offline local coach"
+                        : feedbackSource === "local" ||
+                            feedbackSource === "local-fallback"
+                          ? "Local coaching engine"
+                          : feedbackSource}
+                  </p>
+                )}
                 <FeedbackPanel feedback={feedback} />
                 <div className="flex flex-wrap justify-end gap-2">
                   <Button variant="outline" onClick={() => finishSession(session!)}>

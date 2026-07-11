@@ -26,7 +26,7 @@ const features = [
     icon: Mic,
     title: "Live Mock Interviews",
     desc: "Timed questions with text or voice input and instant AI scoring.",
-    href: "/interview",
+    href: "/mock-interview",
     cta: "Start a mock interview",
   },
   {
@@ -40,7 +40,7 @@ const features = [
     icon: FileText,
     title: "Resume Intelligence",
     desc: "Upload a PDF and get strengths plus interview talking points.",
-    href: "/resume",
+    href: "/analyze-resume",
     cta: "Analyze your resume",
   },
   {

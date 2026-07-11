@@ -96,15 +96,24 @@ export interface InterviewSession {
   status: "in_progress" | "completed" | "abandoned";
 }
 
+export interface ResumeSampleAnswer {
+  prompt: string;
+  answer: string;
+}
+
 export interface ResumeAnalysis {
   id: string;
   fileName: string;
   uploadedAt: string;
   summary: string;
   strengths: string[];
+  weaknesses: string[];
+  experienceHighlights: string[];
   talkingPoints: string[];
+  sampleAnswers: ResumeSampleAnswer[];
   suggestedRoles: string[];
   rawTextExcerpt?: string;
+  source?: "local" | "xai" | "local-fallback" | "offline";
 }
 
 export interface UserStats {

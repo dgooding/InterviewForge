@@ -200,54 +200,182 @@ export function generateLocalFeedback(
   };
 }
 
-export function generateLocalResumeAnalysis(text: string, fileName: string) {
+export interface LocalResumeResult {
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  experienceHighlights: string[];
+  talkingPoints: string[];
+  sampleAnswers: { prompt: string; answer: string }[];
+  suggestedRoles: string[];
+}
+
+/** Pull short “experience-like” lines from raw resume text for highlights. */
+function extractHighlights(text: string): string[] {
+  const lines = text
+    .split(/[\n•·|]+/)
+    .map((l) => l.replace(/\s+/g, " ").trim())
+    .filter((l) => l.length >= 28 && l.length <= 160);
+
+  const scored = lines
+    .filter((l) =>
+      /\d|%|increased|decreased|led|built|launched|improved|managed|designed|reduced|grew|shipped|owned/i.test(
+        l
+      )
+    )
+    .slice(0, 6);
+
+  if (scored.length >= 2) return scored.slice(0, 5);
+
+  return lines.slice(0, 4);
+}
+
+export function generateLocalResumeAnalysis(
+  text: string,
+  fileName: string
+): LocalResumeResult {
   const lower = text.toLowerCase();
   const strengths: string[] = [];
+  const weaknesses: string[] = [];
   const talkingPoints: string[] = [];
   const suggestedRoles: string[] = [];
+  const sampleAnswers: { prompt: string; answer: string }[] = [];
 
-  if (/react|typescript|javascript|node|python|java|golang|rust/.test(lower)) {
-    strengths.push("Demonstrated hands-on software engineering skills across modern stacks.");
-    talkingPoints.push("Prepare a 60-second story about a system you designed or shipped end-to-end.");
+  if (/react|typescript|javascript|node|python|java|golang|rust|kotlin|swift/.test(lower)) {
+    strengths.push(
+      "Hands-on software engineering skills across modern stacks."
+    );
+    talkingPoints.push(
+      "Prepare a 60-second story about a system you designed or shipped end-to-end."
+    );
     suggestedRoles.push("Software Engineer", "Full Stack Engineer");
+    sampleAnswers.push({
+      prompt: "Tell me about a technical project you're proud of.",
+      answer:
+        "Situation: We needed a reliable feature under tight latency constraints. Task: I owned design and delivery of the core path. Action: I defined the API contract, added caching where safe, and instrumented metrics. Result: We shipped on time and improved p95 latency by a measurable margin — I can walk through the trade-offs if useful.",
+    });
   }
-  if (/product|roadmap|stakeholder|agile|scrum|priorit/.test(lower)) {
+  if (/product|roadmap|stakeholder|agile|scrum|priorit|backlog/.test(lower)) {
     strengths.push("Product sense and stakeholder alignment experience.");
-    talkingPoints.push("Use a RICE/MoSCoW example when discussing prioritization.");
+    talkingPoints.push(
+      "Use a RICE/MoSCoW example when discussing prioritization."
+    );
     suggestedRoles.push("Product Manager");
+    sampleAnswers.push({
+      prompt: "How do you prioritize when everything is urgent?",
+      answer:
+        "I clarify the outcome metric, estimate impact vs effort, and force-rank with stakeholders. In one cycle I deferred a popular request that didn't move retention, freeing capacity for an onboarding fix that lifted activation — I document the decision so the team stays aligned.",
+    });
   }
-  if (/design|figma|ux|user research|wireframe|prototype/.test(lower)) {
+  if (/design|figma|ux|user research|wireframe|prototype|usability/.test(lower)) {
     strengths.push("Design craft and user-centered process.");
-    talkingPoints.push("Walk through one case study: problem → research → solution → impact.");
+    talkingPoints.push(
+      "Walk through one case study: problem → research → solution → impact."
+    );
     suggestedRoles.push("UX Designer", "Product Designer");
   }
-  if (/sql|python|tableau|power bi|analytics|machine learning|model/.test(lower)) {
+  if (
+    /sql|tableau|power bi|analytics|machine learning|model|experiment|a\/b/.test(
+      lower
+    )
+  ) {
     strengths.push("Analytical and data-driven decision making.");
-    talkingPoints.push("Quantify one insight that changed a business decision.");
+    talkingPoints.push(
+      "Quantify one insight that changed a business decision."
+    );
     suggestedRoles.push("Data Analyst", "Data Scientist");
   }
-  if (/sales|pipeline|quota|crm|revenue|customer success/.test(lower)) {
+  if (/sales|pipeline|quota|crm|revenue|customer success|account/.test(lower)) {
     strengths.push("Revenue ownership and customer-facing impact.");
-    talkingPoints.push("Prepare a win story and a loss-learn story with clear metrics.");
+    talkingPoints.push(
+      "Prepare a win story and a loss-learn story with clear metrics."
+    );
     suggestedRoles.push("Account Executive", "Customer Success Manager");
   }
-  if (/lead|manage|mentor|team of|hired|performance/.test(lower)) {
-    strengths.push("Leadership signals — mentoring, ownership, and team outcomes.");
-    talkingPoints.push("Have a leadership story ready: hard feedback, hiring, or delivery under pressure.");
-  }
-  if (strengths.length === 0) {
-    strengths.push("Diverse experience that can be tailored to multiple role narratives.");
-    talkingPoints.push("Pick 3 signature stories and map each to STAR with measurable results.");
-    suggestedRoles.push("Software Engineer", "Product Manager", "Business Analyst");
+  if (/lead|manage|mentor|team of|hired|performance review|1:1|one-on-one/.test(lower)) {
+    strengths.push(
+      "Leadership signals — mentoring, ownership, and team outcomes."
+    );
+    talkingPoints.push(
+      "Have a leadership story ready: hard feedback, hiring, or delivery under pressure."
+    );
   }
 
-  // Unique
+  // Weaknesses / gaps (constructive, interview-prep oriented)
+  if (!/\d+%|\d+x|\$\d|increased|reduced|grew by|saved/.test(lower)) {
+    weaknesses.push(
+      "Impact is under-quantified — add metrics (% lift, $ impact, time saved) to key bullets."
+    );
+  }
+  if (!/led|owned|drove|spearheaded|mentored/.test(lower)) {
+    weaknesses.push(
+      "Ownership language is light — rewrite bullets to emphasize what *you* decided and delivered."
+    );
+  }
+  if (text.length < 800) {
+    weaknesses.push(
+      "Resume text is thin after extraction — flesh out 2–3 signature projects with STAR-ready detail."
+    );
+  }
+  if (
+    !/aws|gcp|azure|kubernetes|docker|ci\/cd|security|accessibility|a11y|privacy|gdpr/.test(
+      lower
+    ) &&
+    /engineer|developer|software/.test(lower)
+  ) {
+    weaknesses.push(
+      "Operational/infra keywords are sparse — mention reliability, CI/CD, or security if accurate."
+    );
+  }
+  if (weaknesses.length === 0) {
+    weaknesses.push(
+      "Tighten top-third of resume for scannability: role title match, 3 quantified wins, clear tools."
+    );
+  }
+
+  if (strengths.length === 0) {
+    strengths.push(
+      "Diverse experience that can be tailored to multiple role narratives."
+    );
+    talkingPoints.push(
+      "Pick 3 signature stories and map each to STAR with measurable results."
+    );
+    suggestedRoles.push(
+      "Software Engineer",
+      "Product Manager",
+      "Business Analyst"
+    );
+  }
+
+  if (sampleAnswers.length === 0) {
+    sampleAnswers.push({
+      prompt: "Tell me about yourself.",
+      answer:
+        "I'm a [role] focused on [domain]. Recently I [signature win with metric]. I'm excited about this role because [mission fit] and I want to bring [strength] to the team.",
+    });
+  }
+
+  sampleAnswers.push({
+    prompt: "What's a challenge you overcame recently?",
+    answer:
+      "Situation: Ambiguous requirements threatened a deadline. Task: I owned alignment and delivery. Action: I ran a short discovery spike, proposed two options with trade-offs, and shipped the MVP with monitoring. Result: We hit the date and reduced rework the following sprint.",
+  });
+
+  const experienceHighlights = extractHighlights(text);
   const uniq = (arr: string[]) => Array.from(new Set(arr));
 
   return {
-    summary: `Based on "${fileName}", your background shows transferable strengths that map well to interview storytelling. Focus on quantifying impact and aligning stories to the target role.`,
+    summary: `Based on "${fileName}", your background shows transferable strengths that map well to interview storytelling. Lean into quantified wins and clear ownership; use the talking points below to convert resume bullets into spoken STAR answers.`,
     strengths: uniq(strengths).slice(0, 5),
-    talkingPoints: uniq(talkingPoints).slice(0, 5),
+    weaknesses: uniq(weaknesses).slice(0, 5),
+    experienceHighlights:
+      experienceHighlights.length > 0
+        ? experienceHighlights
+        : [
+            "Add 3–5 accomplishment bullets with action + metric so highlights can be extracted next time.",
+          ],
+    talkingPoints: uniq(talkingPoints).slice(0, 6),
+    sampleAnswers: sampleAnswers.slice(0, 4),
     suggestedRoles: uniq(suggestedRoles).slice(0, 5),
   };
 }
