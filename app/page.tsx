@@ -113,6 +113,9 @@ export default function LandingPage() {
             <Sparkles className="h-3.5 w-3.5 text-violet-500" />
             AI-Powered Interview Coaching
           </Badge>
+          <p className="mb-4 text-lg font-semibold tracking-tight text-violet-400 sm:text-xl">
+            Dave are you shitting me?
+          </p>
           <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
             Master Any Interview{" "}
             <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">

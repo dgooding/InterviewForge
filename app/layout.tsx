@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "InterviewForge — Master Any Interview with AI",
+  title: "Dave are you shitting me? | InterviewForge",
   description:
     "AI-powered job interview prep platform. Practice behavioral, technical, and company-specific interviews with instant feedback.",
   keywords: [
