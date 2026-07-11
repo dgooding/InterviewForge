@@ -140,3 +140,12 @@ function clearSupabaseAuthStorage(): void {
 }
 
 export { isSupabaseConfigured };
+
+/** UI flags — only true after providers are enabled in Supabase + Vercel env. */
+export function isGoogleOAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true";
+}
+
+export function isGitHubOAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_GITHUB_OAUTH_ENABLED === "true";
+}

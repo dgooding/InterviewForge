@@ -559,10 +559,11 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
       ? `${window.location.origin}/auth/callback`
       : undefined;
 
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo,
+      skipBrowserRedirect: false,
       queryParams: {
         access_type: "offline",
         prompt: "select_account",
@@ -570,7 +571,24 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
     },
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    const msg = error.message || String(error);
+    if (
+      msg.includes("provider is not enabled") ||
+      msg.includes("Unsupported provider") ||
+      msg.includes("validation_failed")
+    ) {
+      return {
+        error:
+          "Unsupported provider: Google is not enabled in Supabase. Use email magic link, or enable Google under Authentication → Providers.",
+      };
+    }
+    return { error: msg };
+  }
+  // If Supabase returned a URL but didn't navigate (some browsers), go there
+  if (data?.url && typeof window !== "undefined") {
+    window.location.assign(data.url);
+  }
   return {};
 }
 
@@ -621,12 +639,28 @@ export async function signInWithGitHub(): Promise<{ error?: string }> {
       ? `${window.location.origin}/auth/callback`
       : undefined;
 
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
-    options: { redirectTo },
+    options: { redirectTo, skipBrowserRedirect: false },
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    const msg = error.message || String(error);
+    if (
+      msg.includes("provider is not enabled") ||
+      msg.includes("Unsupported provider") ||
+      msg.includes("validation_failed")
+    ) {
+      return {
+        error:
+          "Unsupported provider: GitHub is not enabled in Supabase. Use email magic link, or enable GitHub under Authentication → Providers.",
+      };
+    }
+    return { error: msg };
+  }
+  if (data?.url && typeof window !== "undefined") {
+    window.location.assign(data.url);
+  }
   return {};
 }
 

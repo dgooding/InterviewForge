@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Cloud, HardDrive, Shield } from "lucide-react";
+import { Sparkles, Loader2, Cloud, HardDrive, Shield, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,8 @@ import {
   signInWithGitHub,
   signInWithEmail,
   isSupabaseConfigured,
+  isGoogleOAuthEnabled,
+  isGitHubOAuthEnabled,
 } from "@/lib/auth";
 import { useApp } from "@/components/providers";
 import { hasLocalProgress } from "@/lib/storage";
@@ -36,34 +38,52 @@ function LoginInner() {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const configured = isSupabaseConfigured() || cloudEnabled;
+  const googleOn = isGoogleOAuthEnabled();
+  const githubOn = isGitHubOAuthEnabled();
   const willMigrate = typeof window !== "undefined" && hasLocalProgress();
 
   useEffect(() => {
     if (isCloudUser) router.replace("/dashboard");
   }, [isCloudUser, router]);
 
+  const friendlyOAuthError = (raw: string, provider: string) => {
+    const r = raw.toLowerCase();
+    if (
+      r.includes("provider is not enabled") ||
+      r.includes("unsupported provider") ||
+      r.includes("validation_failed")
+    ) {
+      return `${provider} isn’t enabled in Supabase yet. Use the email magic link (works now), or add ${provider} Client ID/Secret in Supabase → Authentication → Providers.`;
+    }
+    return raw;
+  };
+
   const onGoogle = async () => {
+    if (!googleOn) {
+      toast.message(
+        "Google isn’t enabled yet. Use email magic link, or configure Google in Supabase (see docs/GOOGLE_OAUTH_EXACT.md)."
+      );
+      return;
+    }
     setLoading("google");
     const res = await signInWithGoogle();
     if (res.error) {
-      toast.error(
-        res.error.includes("provider is not enabled")
-          ? "Google isn’t enabled yet — use email magic link below, or finish Google Cloud setup."
-          : res.error
-      );
+      toast.error(friendlyOAuthError(res.error, "Google"));
       setLoading(null);
     }
   };
 
   const onGitHub = async () => {
+    if (!githubOn) {
+      toast.message(
+        "GitHub isn’t enabled yet. Use email magic link, or add a GitHub OAuth app in Supabase Providers."
+      );
+      return;
+    }
     setLoading("github");
     const res = await signInWithGitHub();
     if (res.error) {
-      toast.error(
-        res.error.includes("provider is not enabled")
-          ? "GitHub isn’t enabled yet — use email magic link below."
-          : res.error
-      );
+      toast.error(friendlyOAuthError(res.error, "GitHub"));
       setLoading(null);
     }
   };
@@ -110,7 +130,7 @@ function LoginInner() {
           <CardContent className="space-y-4">
             {oauthError && (
               <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
-                Sign-in was cancelled or failed. Please try again.
+                Sign-in was cancelled or failed. Try the email magic link below.
               </p>
             )}
 
@@ -122,9 +142,12 @@ function LoginInner() {
               </p>
             )}
 
-            {/* Email magic link — works now without Google Cloud */}
+            {/* Email — works with current Supabase config */}
             <form onSubmit={onEmail} className="space-y-2">
-              <Label htmlFor="email">Email magic link (recommended)</Label>
+              <Label htmlFor="email" className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" />
+                Email magic link (works now)
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -152,13 +175,13 @@ function LoginInner() {
               {emailSent && (
                 <p className="text-xs text-muted-foreground">
                   Open the link on this device. It signs you in and syncs local
-                  progress. Check spam if you don&apos;t see it in 1–2 minutes.
+                  progress. Check spam if needed.
                 </p>
               )}
             </form>
 
             <div className="relative py-1 text-center text-xs text-muted-foreground">
-              <span className="bg-card px-2 relative z-10">or</span>
+              <span className="relative z-10 bg-card px-2">optional</span>
               <div className="absolute left-0 right-0 top-1/2 border-t border-border" />
             </div>
 
@@ -174,7 +197,7 @@ function LoginInner() {
               ) : (
                 <GoogleIcon />
               )}
-              Continue with Google
+              {googleOn ? "Continue with Google" : "Google (setup required)"}
             </Button>
 
             <Button
@@ -189,14 +212,20 @@ function LoginInner() {
               ) : (
                 <GitHubIcon />
               )}
-              Continue with GitHub
+              {githubOn ? "Continue with GitHub" : "GitHub (setup required)"}
             </Button>
+
+            {(!googleOn || !githubOn) && configured && (
+              <p className="text-xs text-muted-foreground">
+                Email sign-in is fully live. Google/GitHub need OAuth Client
+                ID + Secret in Supabase (docs/GOOGLE_OAUTH_EXACT.md). Until
+                then those buttons won&apos;t call a disabled provider.
+              </p>
+            )}
 
             {!configured && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                Cloud login isn&apos;t configured on this deployment yet. Add
-                Supabase env vars (README). Guest mode still works with full
-                local privacy.
+                Cloud login isn&apos;t configured on this deployment yet.
               </p>
             )}
 
@@ -207,15 +236,14 @@ function LoginInner() {
               </p>
               <p>
                 Sessions, resume insights, role, and streak sync privately under
-                your account (Supabase RLS).
+                your account.
               </p>
               <p className="mt-2 flex items-center gap-2 font-medium text-foreground">
                 <HardDrive className="h-3.5 w-3.5 text-primary" />
                 Guest
               </p>
               <p>
-                100% local. No progress is sent to our database until you sign
-                in.
+                100% local until you sign in. Nothing is uploaded as a guest.
               </p>
             </div>
           </CardContent>
