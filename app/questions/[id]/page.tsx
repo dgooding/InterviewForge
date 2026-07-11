@@ -52,9 +52,9 @@ export default function QuestionDetailPage() {
   }
 
   const mode = categoryToInterviewMode(question.category);
-  const practiceHref = `/interview?q=${encodeURIComponent(question.id)}&autostart=1`;
-  const categoryHref = `/interview?category=${encodeURIComponent(question.category)}&autostart=1`;
-  const modeHref = `/interview?mode=${encodeURIComponent(mode)}`;
+  const practiceHref = `/interview/${mode}?q=${encodeURIComponent(question.id)}&autostart=1`;
+  const categoryHref = `/interview/${mode}?category=${encodeURIComponent(question.category)}&autostart=1`;
+  const modeHref = `/interview/${mode}`;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -194,7 +194,7 @@ export default function QuestionDetailPage() {
                         </Button>
                         <Button asChild size="sm" variant="gradient">
                           <Link
-                            href={`/interview?q=${encodeURIComponent(r.id)}&autostart=1`}
+                            href={`/interview/${categoryToInterviewMode(r.category)}?q=${encodeURIComponent(r.id)}&autostart=1`}
                           >
                             Practice
                           </Link>

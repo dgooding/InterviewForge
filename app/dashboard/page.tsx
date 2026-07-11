@@ -62,7 +62,7 @@ export default function DashboardPage() {
     {
       title: "Behavioral STAR drill",
       desc: "Sharpen structure with timed behavioral questions.",
-      href: "/interview?mode=behavioral",
+      href: "/interview/behavioral",
       icon: Mic,
     },
   ];

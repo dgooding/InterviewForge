@@ -54,7 +54,7 @@ const features = [
     icon: Zap,
     title: "Company Styles",
     desc: "Practice Google, Meta, Amazon LP, Apple, Microsoft, and startup formats.",
-    href: "/interview?mode=company",
+    href: "/interview/company",
     cta: "Practice company styles",
   },
   {
