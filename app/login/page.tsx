@@ -197,29 +197,30 @@ function LoginInner() {
               ) : (
                 <GoogleIcon />
               )}
-              {googleOn ? "Continue with Google" : "Google (setup required)"}
+              Continue with Google
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              disabled={!!loading || !configured}
-              onClick={onGitHub}
-            >
-              {loading === "github" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <GitHubIcon />
-              )}
-              {githubOn ? "Continue with GitHub" : "GitHub (setup required)"}
-            </Button>
+            {githubOn && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={!!loading || !configured}
+                onClick={onGitHub}
+              >
+                {loading === "github" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <GitHubIcon />
+                )}
+                Continue with GitHub
+              </Button>
+            )}
 
-            {(!googleOn || !githubOn) && configured && (
+            {configured && (
               <p className="text-xs text-muted-foreground">
-                Email sign-in is fully live. Google/GitHub need OAuth Client
-                ID + Secret in Supabase (docs/GOOGLE_OAUTH_EXACT.md). Until
-                then those buttons won&apos;t call a disabled provider.
+                Prefer email if Google is blocked on your network. Guest mode
+                keeps progress on this device only.
               </p>
             )}
 
