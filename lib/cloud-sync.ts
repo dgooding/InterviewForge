@@ -634,7 +634,8 @@ export async function signOutCloud(): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (supabase) {
     try {
-      await supabase.auth.signOut();
+      // Local scope is enough for SPA; avoid hanging on remote revoke
+      await supabase.auth.signOut({ scope: "local" });
     } catch (e) {
       console.warn("signOut", e);
     }

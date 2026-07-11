@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Flame,
   LayoutDashboard,
@@ -18,15 +18,12 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  Cloud,
   Settings,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/components/providers";
+import { UserMenu } from "@/components/layout/user-menu";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -42,56 +39,34 @@ const navItems = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const {
     theme,
     toggleTheme,
     stats,
-    user,
     isCloudUser,
     signOut,
     cloudEnabled,
   } = useApp();
   const [open, setOpen] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   if (pathname === "/" || pathname === "/login" || pathname.startsWith("/auth")) {
     return null;
   }
 
-  const initials =
-    user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "IF";
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    try {
-      await signOut();
-      toast.success("Signed out. Local progress remains on this device.");
-      router.push("/");
-    } finally {
-      setSigningOut(false);
-    }
-  };
-
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2 font-bold">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-glow">
               <Sparkles className="h-4 w-4" />
             </span>
-            <span className="hidden sm:inline bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent">
+            <span className="hidden bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent sm:inline">
               InterviewForge
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden items-center gap-0.5 lg:flex">
             {navItems.map((item) => {
               const active = pathname.startsWith(item.href);
               const Icon = item.icon;
@@ -100,7 +75,7 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -114,32 +89,16 @@ export function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 sm:flex">
-            <Flame className="h-4 w-4" />
-            {stats.streak} day streak
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="hidden items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 md:flex">
+            <Flame className="h-3.5 w-3.5" />
+            {stats.streak}d
           </div>
-
-          {isCloudUser ? (
-            <Badge
-              variant="secondary"
-              className="hidden gap-1 sm:inline-flex"
-              title="Progress syncs to your Google account"
-            >
-              <Cloud className="h-3 w-3" />
-              Synced
-            </Badge>
-          ) : (
-            cloudEnabled && (
-              <Badge variant="outline" className="hidden gap-1 sm:inline-flex">
-                Guest
-              </Badge>
-            )
-          )}
 
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9"
             onClick={toggleTheme}
             aria-label="Toggle theme"
           >
@@ -150,34 +109,10 @@ export function Navbar() {
             )}
           </Button>
 
-          {isCloudUser ? (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Avatar className="h-8 w-8">
-                {user?.avatarUrl ? (
-                  <AvatarImage src={user.avatarUrl} alt={user.name} />
-                ) : null}
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="max-w-[100px] truncate text-sm font-medium">
-                {user?.name}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSignOut}
-                disabled={signingOut}
-                aria-label="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
+          {cloudEnabled || isCloudUser ? (
+            <UserMenu />
           ) : (
-            <Button
-              asChild
-              size="sm"
-              variant="gradient"
-              className="hidden sm:inline-flex"
-            >
+            <Button asChild size="sm" variant="gradient" className="hidden sm:inline-flex">
               <Link href="/login">
                 <LogIn className="h-4 w-4" />
                 Sign in
@@ -185,11 +120,18 @@ export function Navbar() {
             </Button>
           )}
 
+          {!isCloudUser && cloudEnabled && (
+            <Button asChild size="sm" variant="outline" className="hidden xl:inline-flex">
+              <Link href="/login">Sync</Link>
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="h-9 w-9 lg:hidden"
             onClick={() => setOpen(!open)}
+            aria-label="Menu"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -222,11 +164,11 @@ export function Navbar() {
             {isCloudUser ? (
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setOpen(false);
-                  void handleSignOut();
+                  await signOut();
                 }}
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted"
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-muted dark:text-rose-400"
               >
                 <LogOut className="h-4 w-4" />
                 Sign out
@@ -238,7 +180,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary"
               >
                 <LogIn className="h-4 w-4" />
-                Sign in with Google
+                Sign in
               </Link>
             )}
           </nav>

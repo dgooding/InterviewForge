@@ -7,18 +7,18 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Subtle, dismissible prompt for guests with local progress.
- * Never uploads anything — only links to optional Google sign-in.
+ * Hidden when signed in (cloud user). Never uploads until login.
  */
 export function SaveProgressBanner() {
-  const { showSyncBanner, dismissSyncBanner } = useApp();
+  const { showSyncBanner, dismissSyncBanner, isCloudUser } = useApp();
 
-  if (!showSyncBanner) return null;
+  if (isCloudUser || !showSyncBanner) return null;
 
   return (
     <div
       role="region"
       aria-label="Save progress across devices"
-      className="sticky top-16 z-40 border-b border-primary/20 bg-primary/10 px-4 py-2.5 backdrop-blur-md sm:px-6"
+      className="relative z-30 border-b border-primary/20 bg-primary/10 px-4 py-2.5 backdrop-blur-md sm:px-6"
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <p className="flex items-start gap-2 text-sm text-foreground sm:items-center">
@@ -26,8 +26,8 @@ export function SaveProgressBanner() {
           <span>
             <span className="font-medium">Progress stays on this device.</span>{" "}
             <span className="text-muted-foreground">
-              Sign in with Google to sync interviews &amp; scores across devices
-              — nothing is uploaded until you choose to.
+              Sign in (email magic link works now) to sync across devices —
+              nothing is uploaded until you choose to.
             </span>
           </span>
         </p>

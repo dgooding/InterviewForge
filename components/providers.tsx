@@ -116,6 +116,47 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    /** Prevent toast spam / overlapping success bubbles on remount */
+    let didWelcomeToast = false;
+
+    async function applyCloudUser(
+      authUser: {
+        id: string;
+        email?: string | null;
+        user_metadata?: Record<string, unknown> | null;
+        created_at?: string;
+      },
+      opts: { toastWelcome: boolean }
+    ) {
+      const base = await ensureCloudProfile(authUser);
+      const cloud = await hydrateFromCloud(base);
+      if (cancelled) return;
+      setUserState(cloud.user);
+      setSessionsState(cloud.sessions);
+      setResumeState(cloud.resume);
+      setRoleState(cloud.preferredRole);
+      setLastSyncState(getLastCloudSync());
+      setCloudOnline(true);
+      setSyncBannerDismissed(true);
+      setBannerDismissed(true);
+
+      if (opts.toastWelcome && !didWelcomeToast) {
+        didWelcomeToast = true;
+        if (cloud.migratedLocalSessions > 0) {
+          toast.success(
+            `Synced ${cloud.migratedLocalSessions} local session${
+              cloud.migratedLocalSessions === 1 ? "" : "s"
+            } to your account`,
+            { id: "if-signed-in", duration: 4000 }
+          );
+        } else {
+          toast.success("Signed in — progress syncs across devices", {
+            id: "if-signed-in",
+            duration: 3500,
+          });
+        }
+      }
+    }
 
     async function boot() {
       const t = getTheme();
@@ -141,27 +182,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         if (data.session?.user) {
-          const base = await ensureCloudProfile(data.session.user);
-          const cloud = await hydrateFromCloud(base);
-          if (cancelled) return;
-          setUserState(cloud.user);
-          setSessionsState(cloud.sessions);
-          setResumeState(cloud.resume);
-          setRoleState(cloud.preferredRole);
-          setLastSyncState(getLastCloudSync());
-          setCloudOnline(true);
-          if (cloud.migratedLocalSessions > 0) {
-            toast.success(
-              `Synced ${cloud.migratedLocalSessions} local session${
-                cloud.migratedLocalSessions === 1 ? "" : "s"
-              } to your account`
-            );
-          }
+          // Silent hydrate on refresh — no toast bubble every visit
+          await applyCloudUser(data.session.user, { toastWelcome: false });
         } else {
-          // Guest: local only — never touch cloud APIs
           const existing = getUser();
           if (existing?.isCloud) {
-            // Stale cloud identity without session → guest id, keep local progress rows
             createFreshGuest();
           } else {
             ensureLocalUser();
@@ -193,50 +218,40 @@ export function Providers({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
-        // Keep local progress; identity becomes guest
-        setUserState(createFreshGuest());
+        const guest = createFreshGuest();
+        setUserState(guest);
         applyLocalMirror();
+        setAuthLoading(false);
         return;
       }
-      if (
-        session?.user &&
-        (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")
-      ) {
-        // Only full migrate on SIGNED_IN (explicit login)
-        if (event === "TOKEN_REFRESHED") {
-          // light touch — don't re-toast migrate
-          try {
-            const base = await ensureCloudProfile(session.user);
-            setUserState(base);
-            setCloudOnline(true);
-          } catch {
-            setCloudOnline(false);
-          }
-          return;
+
+      // Ignore INITIAL_SESSION here — boot() already hydrates once
+      if (event === "INITIAL_SESSION") {
+        return;
+      }
+
+      if (session?.user && event === "TOKEN_REFRESHED") {
+        try {
+          const base = await ensureCloudProfile(session.user);
+          setUserState(base);
+          setCloudOnline(true);
+        } catch {
+          setCloudOnline(false);
         }
+        return;
+      }
+
+      if (session?.user && event === "SIGNED_IN") {
         try {
           setAuthLoading(true);
-          const base = await ensureCloudProfile(session.user);
-          const cloud = await hydrateFromCloud(base);
-          setUserState(cloud.user);
-          setSessionsState(cloud.sessions);
-          setResumeState(cloud.resume);
-          setRoleState(cloud.preferredRole);
-          setLastSyncState(getLastCloudSync());
-          setCloudOnline(true);
-          if (cloud.migratedLocalSessions > 0) {
-            toast.success(
-              `Your local progress was saved to your account (${cloud.migratedLocalSessions} new session${
-                cloud.migratedLocalSessions === 1 ? "" : "s"
-              })`
-            );
-          } else {
-            toast.success("Signed in — progress syncs across devices");
-          }
+          await applyCloudUser(session.user, { toastWelcome: true });
         } catch (e) {
           console.warn("auth hydrate failed", e);
           setCloudOnline(false);
-          toast.message("Signed in, but cloud sync is offline. Data stays on this device.");
+          toast.message(
+            "Signed in, but cloud sync is offline. Data stays on this device.",
+            { id: "if-signed-in-offline" }
+          );
         } finally {
           setAuthLoading(false);
         }
@@ -342,9 +357,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await authSignOut();
-    setUserState(createFreshGuest());
-    applyLocalMirror();
+    try {
+      await authSignOut();
+    } finally {
+      const guest = createFreshGuest();
+      setUserState(guest);
+      applyLocalMirror();
+      setAuthLoading(false);
+    }
   }, [applyLocalMirror]);
 
   const dismissSyncBanner = useCallback(() => {
@@ -482,7 +502,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={value}>
       {children}
       <SaveProgressBanner />
-      <Toaster position="top-right" theme={theme} richColors closeButton />
+      <Toaster
+        position="bottom-right"
+        theme={theme}
+        richColors
+        closeButton
+        gap={8}
+        toastOptions={{
+          className: "text-sm",
+          duration: 3500,
+        }}
+      />
     </AppContext.Provider>
   );
 }

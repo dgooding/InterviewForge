@@ -50,6 +50,8 @@ export default function AuthCallbackPage() {
 
         if (active) {
           setMessage("Signed in — loading your progress…");
+          // Small delay so onAuthStateChange can hydrate before navigation
+          await new Promise((r) => setTimeout(r, 150));
           router.replace("/dashboard");
         }
       } catch (e) {

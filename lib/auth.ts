@@ -108,8 +108,35 @@ export async function signInWithEmail(
 }
 
 export async function signOut(): Promise<void> {
-  await signOutCloud();
-  resetToGuest(true);
+  try {
+    await signOutCloud();
+  } finally {
+    // Always clear cloud identity locally even if network sign-out fails
+    clearSupabaseAuthStorage();
+    resetToGuest(true);
+  }
+}
+
+/** Remove Supabase auth keys from localStorage so sessions don't resurrect. */
+function clearSupabaseAuthStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (
+        k &&
+        (k.startsWith("sb-") ||
+          k.includes("supabase.auth") ||
+          k.includes("supabase-auth"))
+      ) {
+        keys.push(k);
+      }
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    /* ignore */
+  }
 }
 
 export { isSupabaseConfigured };
