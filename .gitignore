@@ -45,3 +45,9 @@ yarn-error.log*
 *.swo
 
 .vercel
+
+scripts/gcp-console*
+scripts/probe-gcp*
+scripts/gcp-creds*
+.env.vercel.pull
+
