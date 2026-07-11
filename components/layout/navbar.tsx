@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Flame,
   LayoutDashboard,
@@ -13,16 +13,13 @@ import {
   History,
   Moon,
   Sun,
-  LogOut,
   Menu,
   X,
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useApp } from "@/components/providers";
-import { signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -37,27 +34,10 @@ const navItems = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, theme, toggleTheme, setUser, stats } = useApp();
+  const { theme, toggleTheme, stats } = useApp();
   const [open, setOpen] = useState(false);
 
-  const isAuthPage =
-    pathname === "/" || pathname === "/login" || pathname === "/signup";
-  if (isAuthPage) return null;
-
-  const handleLogout = () => {
-    signOut();
-    setUser(null);
-    router.push("/");
-  };
-
-  const initials =
-    user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "IF";
+  if (pathname === "/") return null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -96,12 +76,10 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {user && (
-            <div className="hidden items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 sm:flex">
-              <Flame className="h-4 w-4" />
-              {stats.streak} day streak
-            </div>
-          )}
+          <div className="hidden items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 sm:flex">
+            <Flame className="h-4 w-4" />
+            {stats.streak} day streak
+          </div>
 
           <Button
             variant="ghost"
@@ -115,20 +93,6 @@ export function Navbar() {
               <Moon className="h-4 w-4" />
             )}
           </Button>
-
-          {user && (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <span className="max-w-[120px] truncate text-sm font-medium">
-                {user.name}
-              </span>
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
 
           <Button
             variant="ghost"
@@ -164,15 +128,6 @@ export function Navbar() {
                 </Link>
               );
             })}
-            {user && (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </button>
-            )}
           </nav>
         </div>
       )}

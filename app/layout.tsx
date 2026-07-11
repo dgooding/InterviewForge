@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/layout/navbar";
-import { AuthGuard } from "@/components/layout/auth-guard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,9 +34,7 @@ export default function RootLayout({
           <div className="relative min-h-screen">
             <div className="pointer-events-none fixed inset-0 gradient-mesh" />
             <Navbar />
-            <main className="relative">
-              <AuthGuard>{children}</AuthGuard>
-            </main>
+            <main className="relative">{children}</main>
           </div>
         </Providers>
       </body>

@@ -23,7 +23,7 @@ InterviewForge is a production-ready, full-stack **AI-Powered Job Interview Prep
 ## Features
 
 1. **Landing page** — Hero, feature grid, testimonials, CTA  
-2. **Auth** — Email/password demo accounts + **Continue as Guest** (localStorage)  
+2. **No authentication** — Open the app immediately; progress saved in localStorage  
 3. **Dashboard** — Scores, streak, recommendations, recent sessions  
 4. **Job role selector** — Searchable roles + custom role input  
 5. **Resume upload & analysis** — Drag-and-drop PDF/TXT → strengths & talking points  
@@ -54,9 +54,9 @@ InterviewForge is a production-ready, full-stack **AI-Powered Job Interview Prep
 
 ### Why these decisions?
 
+- **No auth barrier** — Instant demo experience; a local profile is auto-created for streak/PDF labels only.  
 - **localStorage first** — Zero-setup demo; easy to pitch without a backend. Migration path + SQL schema live in `lib/storage.ts`.  
 - **Heuristic AI + optional xAI** — Works offline out of the box; add `XAI_API_KEY` for Grok-powered feedback.  
-- **Client-side auth PoC** — Swap for NextAuth/Clerk later without rewriting UI.  
 - **Deep blue / purple palette** — Premium SaaS aesthetic with glass cards and soft glows.
 
 ---
@@ -118,7 +118,6 @@ InterviewForge/
 │   ├── dashboard/
 │   ├── history/
 │   ├── interview/
-│   ├── login/ signup/
 │   ├── questions/
 │   ├── resume/
 │   ├── roles/
@@ -127,7 +126,7 @@ InterviewForge/
 │   └── page.tsx                # Landing
 ├── components/
 │   ├── ui/                     # Button, Card, Input, …
-│   ├── layout/                 # Navbar, AuthGuard
+│   ├── layout/                 # Navbar
 │   ├── feedback-panel.tsx
 │   └── providers.tsx           # App state + theme
 ├── lib/
@@ -164,7 +163,7 @@ npx vercel
 
 ## Future Roadmap
 
-- [ ] Real auth (NextAuth / Clerk) + multi-device sync  
+- [ ] Optional auth (NextAuth / Clerk) + multi-device sync  
 - [ ] Supabase/Postgres persistence (schema already sketched)  
 - [ ] Streaming AI feedback & practice plans  
 - [ ] Video mock interviews  

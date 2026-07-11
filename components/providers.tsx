@@ -19,7 +19,6 @@ import {
   setUser as persistUser,
   getSessions,
   saveSession as persistSession,
-  setSessions,
   getResumeAnalysis,
   setResumeAnalysis as persistResume,
   getSelectedRole,
@@ -28,6 +27,7 @@ import {
   setTheme as persistTheme,
   updateStreak,
 } from "@/lib/storage";
+import { ensureLocalUser } from "@/lib/auth";
 import { computeStats } from "@/lib/stats";
 import type { UserStats } from "@/lib/types";
 
@@ -59,7 +59,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<"light" | "dark">("dark");
 
   const refreshFromStorage = useCallback(() => {
-    setUserState(getUser());
+    const profile = ensureLocalUser();
+    setUserState(profile);
     setSessionsState(getSessions());
     setResumeState(getResumeAnalysis());
     setRoleState(getSelectedRole());
@@ -74,6 +75,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [refreshFromStorage]);
 
   const setUser = useCallback((u: User | null) => {
+    if (u === null) {
+      const fresh = ensureLocalUser();
+      setUserState(fresh);
+      return;
+    }
     persistUser(u);
     setUserState(u);
   }, []);
@@ -102,8 +108,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   const completeSessionStreak = useCallback(() => {
-    const current = getUser();
-    if (!current) return;
+    const current = getUser() || ensureLocalUser();
     const updated = updateStreak(current);
     setUserState(updated);
   }, []);
@@ -166,6 +171,3 @@ export function useApp() {
   if (!ctx) throw new Error("useApp must be used within Providers");
   return ctx;
 }
-
-// re-export for convenience
-export { setSessions };

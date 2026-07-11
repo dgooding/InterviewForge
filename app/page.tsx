@@ -79,7 +79,7 @@ const testimonials = [
 ];
 
 export default function LandingPage() {
-  const { theme, toggleTheme, user } = useApp();
+  const { theme, toggleTheme } = useApp();
   const qCount = getQuestionCount();
 
   return (
@@ -93,15 +93,9 @@ export default function LandingPage() {
             <Moon className="h-4 w-4" />
           )}
         </Button>
-        {user ? (
-          <Button asChild variant="gradient" size="sm">
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
-        ) : (
-          <Button asChild variant="outline" size="sm">
-            <Link href="/login">Sign in</Link>
-          </Button>
-        )}
+        <Button asChild variant="gradient" size="sm">
+          <Link href="/dashboard">Open app</Link>
+        </Button>
       </div>
 
       {/* Hero */}
@@ -132,17 +126,17 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" variant="gradient" className="gap-2">
-              <Link href={user ? "/dashboard" : "/signup"}>
+              <Link href="/dashboard">
                 Start Free Prep
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/login">Continue as Guest</Link>
+              <Link href="/interview">Jump into interview</Link>
             </Button>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            {qCount}+ questions · No credit card · Works offline with local AI
+            {qCount}+ questions · No sign-up required · Works offline with local AI
           </p>
         </motion.div>
 
@@ -264,7 +258,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Button asChild size="lg" variant="gradient">
-                <Link href={user ? "/dashboard" : "/signup"}>
+                <Link href="/dashboard">
                   Start Free Prep
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
