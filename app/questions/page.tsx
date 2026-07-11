@@ -240,8 +240,10 @@ export default function QuestionsPage() {
     setShowBookmarksOnly(false);
   };
 
-  const practiceHref = (q: Question) =>
-    `/interview?q=${encodeURIComponent(q.id)}&autostart=1`;
+  const practiceHref = (q: Question) => {
+    const mode = categoryToInterviewMode(q.rawCategory);
+    return `/interview/${mode}?q=${encodeURIComponent(q.id)}&autostart=1`;
+  };
 
   // Close modal on Escape
   useEffect(() => {
@@ -307,8 +309,17 @@ export default function QuestionsPage() {
                 <Link
                   href={
                     category !== "all"
-                      ? `/interview?category=${encodeURIComponent(category)}&autostart=1`
-                      : "/interview?mode=mixed"
+                      ? `/interview/${categoryToInterviewMode(
+                          category as
+                            | "behavioral"
+                            | "technical"
+                            | "system-design"
+                            | "leadership"
+                            | "product"
+                            | "situational"
+                            | "company-culture"
+                        )}?category=${encodeURIComponent(category)}&autostart=1`
+                      : "/interview/mixed"
                   }
                 >
                   <Mic className="h-4 w-4" />
@@ -703,7 +714,7 @@ export default function QuestionsPage() {
                 </Button>
                 <Button asChild variant="ghost">
                   <Link
-                    href={`/interview?mode=${categoryToInterviewMode(selected.rawCategory)}`}
+                    href={`/interview/${categoryToInterviewMode(selected.rawCategory)}`}
                   >
                     Open simulator
                   </Link>

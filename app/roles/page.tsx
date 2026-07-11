@@ -154,13 +154,27 @@ export default function RolesPage() {
         </div>
 
         {selectedRole && (
-          <div className="mt-10 flex justify-center">
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Button
               variant="gradient"
               size="lg"
               onClick={() => router.push("/interview")}
             >
-              Continue to interview
+              Continue to interview hub
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => router.push("/interview/behavioral")}
+            >
+              Start behavioral
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => router.push("/interview/mixed")}
+            >
+              Start mixed mock
             </Button>
           </div>
         )}
