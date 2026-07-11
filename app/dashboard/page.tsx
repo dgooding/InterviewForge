@@ -103,6 +103,41 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Quick start — features are live, not placeholders */}
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              href: "/interview",
+              title: "Mock interview",
+              desc: "Timed or untimed · voice + AI feedback",
+            },
+            {
+              href: "/resume",
+              title: "Resume intelligence",
+              desc: "PDF upload · ATS · talking points",
+            },
+            {
+              href: "/history",
+              title: "History & PDF",
+              desc: "Past sessions · export reports",
+            },
+            {
+              href: "/analytics",
+              title: "Analytics",
+              desc: "Trends · category scores",
+            },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-xl border border-border/60 bg-card/50 p-4 transition-all hover:border-primary/40 hover:shadow-glow"
+            >
+              <p className="font-semibold">{item.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+            </Link>
+          ))}
+        </div>
+
         {/* Stats */}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[

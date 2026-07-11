@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -14,6 +14,10 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
+  Server,
+  Mic,
+  FileText,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
@@ -28,6 +32,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatDate } from "@/lib/utils";
+
+type Health = {
+  ok: boolean;
+  config: { supabase: boolean; xai: boolean; appUrl: string | null };
+  features: Record<string, boolean>;
+};
 
 export default function SettingsPage() {
   const {
@@ -48,6 +58,14 @@ export default function SettingsPage() {
 
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [health, setHealth] = useState<Health | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then((r) => r.json())
+      .then((d) => setHealth(d))
+      .catch(() => setHealth(null));
+  }, []);
 
   const onDeleteAll = async () => {
     if (!confirmDelete) {
@@ -72,8 +90,83 @@ export default function SettingsPage() {
           You own your interview data. Choose how it is stored.
         </p>
 
+        {/* System / feature readiness */}
+        <Card className="mt-8 border-primary/15">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Server className="h-5 w-5 text-primary" />
+              System status
+            </CardTitle>
+            <CardDescription>
+              Core product works without cloud config. Supabase enables Google
+              sync; xAI upgrades AI quality.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <StatusRow
+                ok
+                label="Guest progress (localStorage)"
+                detail="Always on"
+              />
+              <StatusRow
+                ok
+                label="Resume · Interview · History · Analytics"
+                detail="Fully implemented"
+              />
+              <StatusRow
+                ok={Boolean(health?.config.supabase ?? cloudEnabled)}
+                label="Supabase / Google cloud login"
+                detail={
+                  health?.config.supabase || cloudEnabled
+                    ? "Configured"
+                    : "Add env vars — see SETUP.md"
+                }
+              />
+              <StatusRow
+                ok={Boolean(health?.config.xai)}
+                label="xAI / Grok API"
+                detail={
+                  health?.config.xai
+                    ? "Configured (enhanced AI)"
+                    : "Optional — local coach active"
+                }
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button asChild size="sm" variant="outline">
+                <Link href="/resume">
+                  <FileText className="h-3.5 w-3.5" />
+                  Resume
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/interview">
+                  <Mic className="h-3.5 w-3.5" />
+                  Interview
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/history">
+                  <History className="h-3.5 w-3.5" />
+                  History
+                </Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <a
+                  href="https://github.com/dgooding/InterviewForge/blob/main/SETUP.md"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Setup guide
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Account status */}
-        <Card className="mt-8">
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               {isCloudUser ? (
@@ -250,6 +343,30 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </motion.div>
+    </div>
+  );
+}
+
+function StatusRow({
+  ok,
+  label,
+  detail,
+}: {
+  ok: boolean;
+  label: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex gap-2 rounded-lg border border-border/50 px-3 py-2">
+      {ok ? (
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+      ) : (
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+      )}
+      <div>
+        <p className="font-medium text-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground">{detail}</p>
+      </div>
     </div>
   );
 }

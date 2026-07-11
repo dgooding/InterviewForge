@@ -144,17 +144,20 @@ export default function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" variant="gradient" className="gap-2">
-              <Link href="/login">
-                Sign in with Google
+              <Link href="/dashboard">
+                Start free prep
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/interview">Try as guest</Link>
+              <Link href="/interview">Mock interview</Link>
+            </Button>
+            <Button asChild size="lg" variant="ghost">
+              <Link href="/login">Sign in to sync</Link>
             </Button>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            {qCount}+ questions · Google sync for progress · Guest mode works offline
+            {qCount}+ questions · Guest mode works offline · Optional Google sync
           </p>
         </motion.div>
 
