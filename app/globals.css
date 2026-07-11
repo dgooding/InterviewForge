@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 25% 98%;
+    --foreground: 224 40% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 40% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 40% 10%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 224 30% 20%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 250 95% 96%;
+    --accent-foreground: 243 75% 40%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 243 75% 59%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 224 40% 6%;
+    --foreground: 210 40% 98%;
+    --card: 224 35% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 35% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 243 75% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 25% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 224 25% 14%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 243 40% 16%;
+    --accent-foreground: 250 95% 90%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 20% 16%;
+    --input: 224 20% 16%;
+    --ring: 243 75% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .gradient-mesh {
+    background-image:
+      radial-gradient(at 20% 20%, hsl(243 75% 59% / 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 10%, hsl(270 70% 55% / 0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 80%, hsl(220 80% 50% / 0.1) 0px, transparent 50%);
+  }
+  .dark .gradient-mesh {
+    background-image:
+      radial-gradient(at 20% 20%, hsl(243 75% 59% / 0.2) 0px, transparent 50%),
+      radial-gradient(at 80% 10%, hsl(270 70% 55% / 0.15) 0px, transparent 50%),
+      radial-gradient(at 50% 80%, hsl(220 80% 50% / 0.12) 0px, transparent 50%);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
