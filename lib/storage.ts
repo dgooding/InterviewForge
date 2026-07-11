@@ -26,6 +26,8 @@ const KEYS = {
   bannerDismissed: "if_sync_banner_dismissed",
   /** Last successful cloud pull timestamp (ISO) */
   lastCloudSync: "if_last_cloud_sync",
+  /** Bookmarked question IDs from the Question Bank */
+  bookmarkedQuestions: "if_bookmarked_questions",
 } as const;
 
 function isBrowser(): boolean {
@@ -126,6 +128,27 @@ export function isSyncBannerDismissed(): boolean {
 
 export function setSyncBannerDismissed(dismissed: boolean): void {
   setJSON(KEYS.bannerDismissed, dismissed);
+}
+
+export function getBookmarkedQuestionIds(): string[] {
+  return getJSON<string[]>(KEYS.bookmarkedQuestions, []);
+}
+
+export function setBookmarkedQuestionIds(ids: string[]): void {
+  setJSON(KEYS.bookmarkedQuestions, ids);
+}
+
+export function toggleBookmarkedQuestion(id: string): string[] {
+  const current = getBookmarkedQuestionIds();
+  const next = current.includes(id)
+    ? current.filter((x) => x !== id)
+    : [...current, id];
+  setBookmarkedQuestionIds(next);
+  return next;
+}
+
+export function isQuestionBookmarked(id: string): boolean {
+  return getBookmarkedQuestionIds().includes(id);
 }
 
 export function getLastCloudSync(): string | null {

@@ -1,267 +1,718 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Search,
   BookOpen,
   Mic,
-  ArrowRight,
-  Layers,
-  ExternalLink,
+  Bookmark,
+  X,
+  Lightbulb,
+  ListTree,
+  MessageCircleQuestion,
+  Sparkles,
+  Filter,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   QUESTIONS,
   CATEGORIES,
   getQuestionCount,
   categoryToInterviewMode,
 } from "@/lib/questions";
+import type { InterviewQuestion } from "@/lib/types";
+import {
+  getBookmarkedQuestionIds,
+  toggleBookmarkedQuestion,
+} from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** Display-facing question shape (maps from bank data). */
+export interface Question {
+  id: string;
+  text: string;
+  tip: string;
+  category:
+    | "Behavioral"
+    | "Technical"
+    | "System Design"
+    | "Leadership"
+    | "Product"
+    | "Situational"
+    | "Company Culture";
+  difficulty: "Easy" | "Medium" | "Hard";
+  sampleAnswerOutline?: string;
+  rawCategory: InterviewQuestion["category"];
+}
+
+const CATEGORY_LABEL: Record<InterviewQuestion["category"], Question["category"]> =
+  {
+    behavioral: "Behavioral",
+    technical: "Technical",
+    "system-design": "System Design",
+    leadership: "Leadership",
+    product: "Product",
+    situational: "Situational",
+    "company-culture": "Company Culture",
+  };
+
+const CATEGORY_CHIPS: { value: string; label: string }[] = [
+  { value: "all", label: "All Categories" },
+  ...CATEGORIES.map((c) => ({
+    value: c,
+    label: CATEGORY_LABEL[c],
+  })),
+];
+
+const DIFFICULTY_CHIPS: { value: string; label: string }[] = [
+  { value: "all", label: "All Levels" },
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+];
+
+const CATEGORY_PILL: Record<string, string> = {
+  behavioral:
+    "bg-violet-500/15 text-violet-700 border-violet-500/25 dark:text-violet-300",
+  technical:
+    "bg-indigo-500/15 text-indigo-700 border-indigo-500/25 dark:text-indigo-300",
+  "system-design":
+    "bg-purple-500/15 text-purple-700 border-purple-500/25 dark:text-purple-300",
+  leadership:
+    "bg-fuchsia-500/15 text-fuchsia-700 border-fuchsia-500/25 dark:text-fuchsia-300",
+  product:
+    "bg-sky-500/15 text-sky-700 border-sky-500/25 dark:text-sky-300",
+  situational:
+    "bg-cyan-500/15 text-cyan-700 border-cyan-500/25 dark:text-cyan-300",
+  "company-culture":
+    "bg-blue-500/15 text-blue-700 border-blue-500/25 dark:text-blue-300",
+};
+
+const DIFFICULTY_PILL: Record<string, string> = {
+  easy: "bg-emerald-500/15 text-emerald-700 border-emerald-500/20 dark:text-emerald-400",
+  medium:
+    "bg-amber-500/15 text-amber-800 border-amber-500/20 dark:text-amber-400",
+  hard: "bg-rose-500/15 text-rose-700 border-rose-500/20 dark:text-rose-400",
+};
+
+function toDisplayQuestion(q: InterviewQuestion): Question {
+  return {
+    id: q.id,
+    text: q.text,
+    tip:
+      q.tips ||
+      defaultTip(q.category),
+    category: CATEGORY_LABEL[q.category],
+    difficulty:
+      q.difficulty === "easy"
+        ? "Easy"
+        : q.difficulty === "hard"
+          ? "Hard"
+          : "Medium",
+    sampleAnswerOutline: q.sampleAnswerOutline,
+    rawCategory: q.category,
+  };
+}
+
+function defaultTip(category: InterviewQuestion["category"]): string {
+  switch (category) {
+    case "behavioral":
+    case "leadership":
+    case "situational":
+      return "Use STAR: Situation → Task → Action → Result. Quantify impact.";
+    case "technical":
+      return "Clarify constraints, outline your approach, then discuss trade-offs.";
+    case "system-design":
+      return "Start with requirements, sketch components, then scale and failure modes.";
+    case "product":
+      return "Define user, goal, metrics, then options and why you chose one.";
+    case "company-culture":
+      return "Be specific and authentic — tie values to real examples.";
+    default:
+      return "Structure your answer; lead with the point, then evidence.";
+  }
+}
+
+function structureTips(category: InterviewQuestion["category"]): string[] {
+  switch (category) {
+    case "behavioral":
+    case "leadership":
+    case "situational":
+      return [
+        "Situation — set context in 1–2 sentences",
+        "Task — your responsibility or goal",
+        "Action — what you did (emphasize ownership)",
+        "Result — measurable outcome + what you learned",
+      ];
+    case "technical":
+      return [
+        "Restate the problem and constraints",
+        "Outline 1–2 approaches before coding/deep-diving",
+        "Explain complexity (time/space) when relevant",
+        "Call out edge cases and testing",
+      ];
+    case "system-design":
+      return [
+        "Requirements (functional + non-functional)",
+        "High-level design (clients, services, data stores)",
+        "Deep dive on bottlenecks and scaling",
+        "Trade-offs, monitoring, and failure recovery",
+      ];
+    case "product":
+      return [
+        "Who is the user and what job are they hiring the product for?",
+        "Success metrics (north star + guardrails)",
+        "Options considered and prioritization",
+        "Rollout, risks, and iteration plan",
+      ];
+    default:
+      return [
+        "Lead with a clear thesis",
+        "Support with one concrete example",
+        "Close with impact or a thoughtful question",
+      ];
+  }
+}
+
+function followUps(q: Question): string[] {
+  return [
+    `Can you go deeper on the most important decision in: “${q.text.slice(0, 60)}${q.text.length > 60 ? "…" : ""}”?`,
+    "What would you do differently with what you know now?",
+    "How did you measure success, and who disagreed with you?",
+  ];
+}
+
 export default function QuestionsPage() {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<string>("all");
-  const [difficulty, setDifficulty] = useState<string>("all");
+  const [category, setCategory] = useState("all");
+  const [difficulty, setDifficulty] = useState("all");
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Question | null>(null);
+  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
+
+  useEffect(() => {
+    setBookmarks(getBookmarkedQuestionIds());
+  }, []);
+
+  const bank: Question[] = useMemo(
+    () => QUESTIONS.map(toDisplayQuestion),
+    []
+  );
 
   const filtered = useMemo(() => {
-    return QUESTIONS.filter((q) => {
-      if (category !== "all" && q.category !== category) return false;
-      if (difficulty !== "all" && q.difficulty !== difficulty) return false;
-      if (search.trim()) {
-        const s = search.toLowerCase();
-        if (
-          !q.text.toLowerCase().includes(s) &&
-          !q.category.includes(s) &&
-          !q.id.includes(s)
-        )
-          return false;
+    const s = search.trim().toLowerCase();
+    return bank.filter((q) => {
+      if (showBookmarksOnly && !bookmarks.includes(q.id)) return false;
+      if (category !== "all" && q.rawCategory !== category) return false;
+      if (difficulty !== "all" && q.difficulty.toLowerCase() !== difficulty)
+        return false;
+      if (s) {
+        const hay = `${q.text} ${q.tip} ${q.category} ${q.id}`.toLowerCase();
+        if (!hay.includes(s)) return false;
       }
       return true;
     });
-  }, [search, category, difficulty]);
+  }, [bank, search, category, difficulty, showBookmarksOnly, bookmarks]);
 
-  const categoryPracticeHref =
-    category !== "all"
-      ? `/interview?category=${encodeURIComponent(category)}&autostart=1`
-      : "/interview?mode=mixed";
+  const onToggleBookmark = useCallback(
+    (id: string, e?: { stopPropagation: () => void; preventDefault: () => void }) => {
+      e?.stopPropagation();
+      e?.preventDefault();
+      const next = toggleBookmarkedQuestion(id);
+      setBookmarks(next);
+      toast.message(
+        next.includes(id) ? "Saved to bookmarks" : "Removed from bookmarks",
+        { id: `bm-${id}`, duration: 1800 }
+      );
+    },
+    []
+  );
+
+  const clearFilters = () => {
+    setSearch("");
+    setCategory("all");
+    setDifficulty("all");
+    setShowBookmarksOnly(false);
+  };
+
+  const practiceHref = (q: Question) =>
+    `/interview?q=${encodeURIComponent(q.id)}&autostart=1`;
+
+  // Close modal on Escape
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected]);
+
+  useEffect(() => {
+    if (selected) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [selected]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Question Bank</h1>
-            <p className="mt-1 text-muted-foreground">
-              {getQuestionCount()}+ pre-loaded questions — filter, search, and
-              practice with one click.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="gap-1.5">
-              <BookOpen className="h-3.5 w-3.5" />
-              {filtered.length} shown
-            </Badge>
-            <Button asChild size="sm" variant="gradient">
-              <Link href={categoryPracticeHref}>
-                <Mic className="h-4 w-4" />
-                {category === "all"
-                  ? "Start mixed mock"
-                  : `Practice ${category}`}
-              </Link>
-            </Button>
-          </div>
-        </div>
+    <div className="relative min-h-[calc(100vh-4rem)]">
+      {/* Soft indigo ambient background */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
+        <div className="absolute -left-32 top-0 h-72 w-72 rounded-full bg-indigo-600/20 blur-3xl dark:bg-indigo-500/15" />
+        <div className="absolute -right-24 top-40 h-80 w-80 rounded-full bg-violet-600/15 blur-3xl dark:bg-violet-500/10" />
+        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl" />
+      </div>
 
-        <Card className="mt-6 border-primary/15 bg-primary/5">
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-3">
-              <Layers className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-              <div className="text-sm">
-                <p className="font-medium text-foreground">
-                  How to use this bank
-                </p>
-                <p className="text-muted-foreground">
-                  Open any question for tips and outlines, practice that prompt
-                  alone, or run a full mock interview for the category.
-                </p>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
+        <motion.header
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="mb-8"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                InterviewForge library
               </div>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">
+                  Question Bank
+                </span>
+              </h1>
+              <p className="mt-2 max-w-xl text-muted-foreground">
+                {getQuestionCount()}+ pre-loaded questions — filter, search, and
+                practice.
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm" variant="outline">
-                <Link href="/interview">Full simulator</Link>
-              </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/roles">Pick a role</Link>
-              </Button>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard">Dashboard</Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/80 px-3 py-1.5 text-sm font-medium shadow-sm backdrop-blur">
+                <BookOpen className="h-3.5 w-3.5 text-indigo-500" />
+                {filtered.length} question{filtered.length === 1 ? "" : "s"}{" "}
+                shown
+              </span>
+              <Button asChild size="sm" variant="gradient" className="shadow-glow">
+                <Link
+                  href={
+                    category !== "all"
+                      ? `/interview?category=${encodeURIComponent(category)}&autostart=1`
+                      : "/interview?mode=mixed"
+                  }
+                >
+                  <Mic className="h-4 w-4" />
+                  Start mock
+                </Link>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="mt-6 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Search */}
+          <div className="relative mt-6">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9"
-              placeholder="Search questions…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search questions…"
               aria-label="Search questions"
+              className="h-12 rounded-2xl border-indigo-500/20 bg-card/90 pl-11 pr-10 text-base shadow-sm backdrop-blur transition-shadow focus-visible:border-indigo-500/40 focus-visible:shadow-glow"
             />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant={category === "all" ? "default" : "outline"}
-              onClick={() => setCategory("all")}
-            >
-              All categories
-            </Button>
-            {CATEGORIES.map((c) => (
-              <Button
-                key={c}
-                size="sm"
-                variant={category === c ? "default" : "outline"}
-                onClick={() => setCategory(c)}
-                className="capitalize"
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Clear search"
               >
-                {c}
-              </Button>
-            ))}
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {["all", "easy", "medium", "hard"].map((d) => (
-              <Button
-                key={d}
-                size="sm"
-                variant={difficulty === d ? "secondary" : "ghost"}
-                onClick={() => setDifficulty(d)}
-                className="capitalize"
-              >
-                {d === "all" ? "All levels" : d}
-              </Button>
-            ))}
-          </div>
-        </div>
 
-        <div className="mt-8 space-y-3">
-          {filtered.map((q, i) => {
-            const mode = categoryToInterviewMode(q.category);
-            const practiceHref = `/interview?q=${encodeURIComponent(q.id)}&autostart=1`;
-            const categoryHref = `/interview?category=${encodeURIComponent(q.category)}&autostart=1`;
-            const detailHref = `/questions/${encodeURIComponent(q.id)}`;
-
-            return (
-              <motion.div
-                key={q.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.015, 0.3) }}
-              >
-                <Card className="transition-shadow hover:border-primary/25 hover:shadow-md">
-                  <CardHeader className="pb-2">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <CardTitle className="text-base font-medium leading-snug">
-                        <Link
-                          href={detailHref}
-                          className="hover:text-primary hover:underline"
-                        >
-                          {q.text}
-                        </Link>
-                      </CardTitle>
-                      <div className="flex shrink-0 flex-wrap gap-1">
-                        <Badge variant="outline" className="capitalize">
-                          {q.category}
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "capitalize",
-                            q.difficulty === "hard" &&
-                              "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-                            q.difficulty === "medium" &&
-                              "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-                            q.difficulty === "easy" &&
-                              "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                          )}
-                        >
-                          {q.difficulty}
-                        </Badge>
-                        {q.companyStyle && (
-                          <Badge variant="outline" className="capitalize">
-                            {q.companyStyle}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    {q.tips && (
-                      <CardDescription>Tip: {q.tips}</CardDescription>
+          {/* Category chips */}
+          <div className="mt-5">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <Filter className="h-3 w-3" />
+              Categories
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORY_CHIPS.map((chip) => {
+                const active = category === chip.value;
+                return (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    onClick={() => setCategory(chip.value)}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
+                      active
+                        ? "border-transparent bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25"
+                        : "border-border/80 bg-card/60 text-muted-foreground hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-foreground"
                     )}
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs text-muted-foreground">
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Difficulty chips */}
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Difficulty
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {DIFFICULTY_CHIPS.map((chip) => {
+                const active = difficulty === chip.value;
+                return (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    onClick={() => setDifficulty(chip.value)}
+                    className={cn(
+                      "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
+                      active
+                        ? chip.value === "easy"
+                          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                          : chip.value === "medium"
+                            ? "border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300"
+                            : chip.value === "hard"
+                              ? "border-rose-500/40 bg-rose-500/15 text-rose-700 dark:text-rose-300"
+                              : "border-transparent bg-secondary text-secondary-foreground"
+                        : "border-border/80 bg-card/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    )}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowBookmarksOnly((v) => !v)}
+                className={cn(
+                  "ml-1 inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all",
+                  showBookmarksOnly
+                    ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300"
+                    : "border-border/80 bg-card/60 text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                <Bookmark
+                  className={cn(
+                    "h-3.5 w-3.5",
+                    showBookmarksOnly && "fill-current"
+                  )}
+                />
+                Saved ({bookmarks.length})
+              </button>
+            </div>
+          </div>
+        </motion.header>
+
+        {/* Cards grid */}
+        <AnimatePresence mode="popLayout">
+          {filtered.length > 0 ? (
+            <motion.div
+              layout
+              className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2"
+            >
+              {filtered.map((q, i) => {
+                const bookmarked = bookmarks.includes(q.id);
+                return (
+                  <motion.article
+                    key={q.id}
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{
+                      duration: 0.25,
+                      delay: Math.min(i * 0.02, 0.25),
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelected(q)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelected(q);
+                      }
+                    }}
+                    className={cn(
+                      "group relative cursor-pointer rounded-2xl border border-border/70 bg-card/80 p-5 shadow-sm backdrop-blur-sm",
+                      "transition-all duration-200",
+                      "hover:-translate-y-0.5 hover:border-indigo-500/35 hover:shadow-lg hover:shadow-indigo-500/10",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                    )}
+                  >
+                    <span className="absolute right-4 top-4 text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70">
                       ID: {q.id}
-                      {q.mode && q.mode !== "all" ? ` · mode ${q.mode}` : ""}
-                      {` · simulator ${mode}`}
+                    </span>
+
+                    <button
+                      type="button"
+                      aria-label={
+                        bookmarked ? "Remove bookmark" : "Save question"
+                      }
+                      onClick={(e) => onToggleBookmark(q.id, e)}
+                      className={cn(
+                        "absolute right-4 top-10 rounded-lg p-1.5 transition-colors",
+                        bookmarked
+                          ? "text-indigo-500 hover:bg-indigo-500/10"
+                          : "text-muted-foreground opacity-60 hover:bg-muted hover:opacity-100 group-hover:opacity-100"
+                      )}
+                    >
+                      <Bookmark
+                        className={cn(
+                          "h-4 w-4",
+                          bookmarked && "fill-indigo-500"
+                        )}
+                      />
+                    </button>
+
+                    <div className="mb-3 flex flex-wrap gap-1.5 pr-16">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                          CATEGORY_PILL[q.rawCategory]
+                        )}
+                      >
+                        {q.category}
+                      </span>
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                          DIFFICULTY_PILL[q.difficulty.toLowerCase()]
+                        )}
+                      >
+                        {q.difficulty}
+                      </span>
+                    </div>
+
+                    <h2 className="pr-8 text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-300">
+                      {q.text}
+                    </h2>
+                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-indigo-600/80 dark:text-indigo-400/90">
+                        Tip:{" "}
+                      </span>
+                      {q.tip}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button asChild size="sm" variant="gradient">
-                        <Link href={practiceHref}>
+
+                    <div
+                      className="mt-4 flex flex-wrap items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button asChild size="sm" variant="gradient" className="h-8">
+                        <Link href={practiceHref(q)}>
                           <Mic className="h-3.5 w-3.5" />
-                          Practice this
+                          Practice
                         </Link>
                       </Button>
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={detailHref}>
-                          Details
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={categoryHref} className="capitalize">
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          More {q.category}
-                        </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-indigo-500/20"
+                        type="button"
+                        onClick={() => setSelected(q)}
+                      >
+                        Details
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-          {filtered.length === 0 && (
-            <div className="rounded-xl border border-dashed py-12 text-center">
-              <p className="text-muted-foreground">
-                No questions match your filters.
+                  </motion.article>
+                );
+              })}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-indigo-500/25 bg-card/40 px-6 py-20 text-center"
+            >
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500">
+                <Search className="h-6 w-6" />
+              </div>
+              <h3 className="text-lg font-semibold">No questions match</h3>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                Try a different search term or clear category and difficulty
+                filters.
               </p>
               <Button
-                className="mt-4"
+                className="mt-6"
                 variant="outline"
-                onClick={() => {
-                  setSearch("");
-                  setCategory("all");
-                  setDifficulty("all");
-                }}
+                onClick={clearFilters}
               >
                 Clear filters
               </Button>
-            </div>
+            </motion.div>
           )}
-        </div>
-      </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Detail modal */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              aria-label="Close details"
+              onClick={() => setSelected(null)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="question-modal-title"
+              initial={{ opacity: 0, y: 40, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              transition={{ type: "spring", damping: 26, stiffness: 320 }}
+              className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-indigo-500/20 bg-card shadow-2xl sm:rounded-3xl"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-r from-indigo-600/10 via-violet-600/10 to-transparent px-5 py-4">
+                <div className="min-w-0">
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    <Badge
+                      className={cn(
+                        "border font-semibold",
+                        CATEGORY_PILL[selected.rawCategory]
+                      )}
+                      variant="outline"
+                    >
+                      {selected.category}
+                    </Badge>
+                    <Badge
+                      className={cn(
+                        "border font-semibold",
+                        DIFFICULTY_PILL[selected.difficulty.toLowerCase()]
+                      )}
+                      variant="outline"
+                    >
+                      {selected.difficulty}
+                    </Badge>
+                    <span className="self-center text-[10px] font-mono text-muted-foreground">
+                      ID: {selected.id}
+                    </span>
+                  </div>
+                  <h2
+                    id="question-modal-title"
+                    className="text-lg font-semibold leading-snug"
+                  >
+                    {selected.text}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+                <section>
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
+                    <Lightbulb className="h-4 w-4" />
+                    Coaching tip
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{selected.tip}</p>
+                </section>
+
+                <section>
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
+                    <ListTree className="h-4 w-4" />
+                    Answer structure
+                  </h3>
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    {structureTips(selected.rawCategory).map((line) => (
+                      <li key={line} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                {selected.sampleAnswerOutline && (
+                  <section>
+                    <h3 className="mb-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
+                      Outline to adapt
+                    </h3>
+                    <p className="whitespace-pre-wrap rounded-xl bg-muted/50 p-3 text-sm text-muted-foreground">
+                      {selected.sampleAnswerOutline}
+                    </p>
+                  </section>
+                )}
+
+                <section>
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
+                    <MessageCircleQuestion className="h-4 w-4" />
+                    Likely follow-ups
+                  </h3>
+                  <ul className="space-y-2">
+                    {followUps(selected).map((f) => (
+                      <li
+                        key={f}
+                        className="rounded-xl border border-border/60 bg-background/50 px-3 py-2 text-sm text-muted-foreground"
+                      >
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+
+              <div className="flex flex-wrap gap-2 border-t border-border/60 bg-card px-5 py-4">
+                <Button asChild variant="gradient" className="flex-1 sm:flex-none">
+                  <Link href={practiceHref(selected)}>
+                    <Mic className="h-4 w-4" />
+                    Practice this question
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onToggleBookmark(selected.id)}
+                >
+                  <Bookmark
+                    className={cn(
+                      "h-4 w-4",
+                      bookmarks.includes(selected.id) &&
+                        "fill-indigo-500 text-indigo-500"
+                    )}
+                  />
+                  {bookmarks.includes(selected.id) ? "Saved" : "Save"}
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link
+                    href={`/interview?mode=${categoryToInterviewMode(selected.rawCategory)}`}
+                  >
+                    Open simulator
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
