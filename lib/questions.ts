@@ -971,6 +971,56 @@ export function getQuestionCount(): number {
   return QUESTIONS.length;
 }
 
+export function getQuestionById(id: string): InterviewQuestion | undefined {
+  return QUESTIONS.find((q) => q.id === id);
+}
+
+/** Same category / difficulty siblings for mini-drills (excludes primary). */
+export function getRelatedQuestions(
+  question: InterviewQuestion,
+  limit = 5
+): InterviewQuestion[] {
+  const sameCategory = QUESTIONS.filter(
+    (q) => q.id !== question.id && q.category === question.category
+  );
+  const sameDifficulty = sameCategory.filter(
+    (q) => q.difficulty === question.difficulty
+  );
+  const pool = sameDifficulty.length >= limit ? sameDifficulty : sameCategory;
+  return shuffle(pool).slice(0, limit);
+}
+
+/** Map bank category → interview simulator mode for deep links. */
+export function categoryToInterviewMode(
+  category: InterviewQuestion["category"]
+): InterviewMode {
+  switch (category) {
+    case "behavioral":
+    case "leadership":
+    case "situational":
+    case "company-culture":
+      return "behavioral";
+    case "system-design":
+      return "system-design";
+    case "technical":
+    case "product":
+      return "technical";
+    default:
+      return "mixed";
+  }
+}
+
+/** Build a short practice set: pin primary first, then related. */
+export function buildPracticeSet(
+  primaryId: string,
+  extraCount = 4
+): InterviewQuestion[] {
+  const primary = getQuestionById(primaryId);
+  if (!primary) return [];
+  const related = getRelatedQuestions(primary, extraCount);
+  return [primary, ...related];
+}
+
 export const CATEGORIES = [
   "behavioral",
   "technical",

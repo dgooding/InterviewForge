@@ -21,7 +21,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
-import { getQuestions, COMPANY_STYLES } from "@/lib/questions";
+import {
+  getQuestions,
+  COMPANY_STYLES,
+  getQuestionById,
+  buildPracticeSet,
+  categoryToInterviewMode,
+} from "@/lib/questions";
 import { JOB_ROLES } from "@/lib/roles";
 import {
   generateLocalFeedback,
@@ -117,12 +123,34 @@ export default function InterviewPage() {
   const [phase, setPhase] = useState<"setup" | "live" | "feedback" | "done">(
     "setup"
   );
-  const [mode, setMode] = useState<InterviewMode>(
-    (searchParams.get("mode") as InterviewMode) || "mixed"
-  );
+  const bankQuestionId =
+    searchParams.get("q") || searchParams.get("question") || "";
+  const bankCategory = searchParams.get("category") || "";
+  const bankDifficulty = searchParams.get("difficulty") || "";
+  const autostart = searchParams.get("autostart") === "1";
+
+  const initialMode = useMemo((): InterviewMode => {
+    const m = searchParams.get("mode") as InterviewMode | null;
+    if (m && MODES.some((x) => x.id === m)) return m;
+    if (bankQuestionId) {
+      const q = getQuestionById(bankQuestionId);
+      if (q) return categoryToInterviewMode(q.category);
+    }
+    if (bankCategory) {
+      return categoryToInterviewMode(
+        bankCategory as InterviewQuestion["category"]
+      );
+    }
+    return "mixed";
+  }, [searchParams, bankQuestionId, bankCategory]);
+
+  const [mode, setMode] = useState<InterviewMode>(initialMode);
   const [companyStyle, setCompanyStyle] = useState<CompanyStyle>("google");
   const [customRole, setCustomRole] = useState("");
-  const [untimed, setUntimed] = useState(false);
+  const [untimed, setUntimed] = useState(
+    // Single-question bank drills default to untimed focus mode
+    Boolean(bankQuestionId)
+  );
   const [jdText, setJdText] = useState("");
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [index, setIndex] = useState(0);
@@ -139,9 +167,11 @@ export default function InterviewPage() {
   const [coachMsg, setCoachMsg] = useState("");
   const [coachReply, setCoachReply] = useState("");
   const [coachLoading, setCoachLoading] = useState(false);
+  const [bankBanner, setBankBanner] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(Date.now());
   const recorderRef = useRef<ReturnType<typeof createSpeechRecorder>>(null);
+  const didAutostart = useRef(false);
 
   const speechOk = useMemo(() => isSpeechRecognitionSupported(), []);
 
@@ -187,17 +217,40 @@ export default function InterviewPage() {
     return selectedRole || "Software Engineer";
   };
 
-  const startInterview = () => {
-    const role = resolveRole();
-    const count = MODES.find((m) => m.id === mode)?.count ?? 10;
+  const buildQuestionList = (opts?: {
+    questionId?: string;
+    category?: string;
+    difficulty?: string;
+    role?: string;
+    activeMode?: InterviewMode;
+    activeUntimed?: boolean;
+  }): InterviewQuestion[] => {
+    const role = opts?.role ?? resolveRole();
+    const activeMode = opts?.activeMode ?? mode;
+    const count = MODES.find((m) => m.id === activeMode)?.count ?? 10;
+    const qid = opts?.questionId ?? bankQuestionId;
+    const cat = opts?.category ?? bankCategory;
+    const diff = opts?.difficulty ?? bankDifficulty;
 
-    let qs: InterviewQuestion[] = [];
-    if (mode === "jd") {
-      if (jdText.trim().length < 40) {
-        toast.error("Paste a job description (at least ~40 characters).");
-        return;
-      }
-      qs = questionsFromJobDescription(jdText, role).map((q) => ({
+    // Deep link from question bank: pin this prompt + related
+    if (qid) {
+      const set = buildPracticeSet(qid, 4);
+      if (set.length > 0) return set;
+    }
+
+    // Category practice from bank filters
+    if (cat) {
+      return getQuestions({
+        category: cat,
+        difficulty: diff || undefined,
+        role,
+        limit: count,
+      });
+    }
+
+    if (activeMode === "jd") {
+      if (jdText.trim().length < 40) return [];
+      return questionsFromJobDescription(jdText, role).map((q) => ({
         id: q.id,
         text: q.text,
         category: q.category as InterviewQuestion["category"],
@@ -205,36 +258,85 @@ export default function InterviewPage() {
         roles: ["all"],
         difficulty: "medium" as const,
       }));
-    } else if (mode === "system-design") {
-      qs = getQuestions({
+    }
+
+    if (activeMode === "system-design") {
+      let qs = getQuestions({
         mode: "technical",
         role,
         category: "system-design",
+        difficulty: diff || undefined,
         limit: count,
       });
       if (qs.length < 3) {
         qs = getQuestions({ mode: "technical", role, limit: count });
       }
-    } else {
-      qs = getQuestions({
-        mode: mode === "mixed" ? "mixed" : mode,
-        role,
-        companyStyle: mode === "company" ? companyStyle : undefined,
-        limit: count,
-      });
+      return qs;
     }
+
+    return getQuestions({
+      mode: activeMode === "mixed" ? "mixed" : activeMode,
+      role,
+      companyStyle: activeMode === "company" ? companyStyle : undefined,
+      difficulty: diff || undefined,
+      limit: count,
+    });
+  };
+
+  const startInterview = (override?: {
+    questionId?: string;
+    category?: string;
+    difficulty?: string;
+    forceUntimed?: boolean;
+  }) => {
+    const role = resolveRole();
+    const useUntimed = override?.forceUntimed ?? untimed;
+
+    if (
+      mode === "jd" &&
+      !override?.questionId &&
+      !override?.category &&
+      jdText.trim().length < 40
+    ) {
+      toast.error("Paste a job description (at least ~40 characters).");
+      return;
+    }
+
+    const qs = buildQuestionList({
+      questionId: override?.questionId,
+      category: override?.category,
+      difficulty: override?.difficulty,
+      role,
+      activeMode: mode,
+      activeUntimed: useUntimed,
+    });
 
     if (qs.length === 0) {
       toast.error("No questions found for this setup. Try another mode.");
       return;
     }
+
+    if (override?.questionId || bankQuestionId) {
+      const primary = getQuestionById(
+        override?.questionId || bankQuestionId
+      );
+      if (primary) {
+        setBankBanner(`Practicing from bank: ${primary.text}`);
+        setMode(categoryToInterviewMode(primary.category));
+      }
+    } else if (override?.category || bankCategory) {
+      setBankBanner(
+        `Category drill: ${override?.category || bankCategory}`
+      );
+    }
+
     const newSession: InterviewSession = {
       id: uuidv4(),
       userId: user?.id || "anonymous",
       role,
       mode,
       companyStyle: mode === "company" ? companyStyle : undefined,
-      untimed,
+      untimed: useUntimed,
       jobDescriptionExcerpt:
         mode === "jd" ? jdText.trim().slice(0, 500) : undefined,
       startedAt: new Date().toISOString(),
@@ -248,12 +350,39 @@ export default function InterviewPage() {
     setFeedback(null);
     setPaused(false);
     setPhase("live");
-    startTimer();
+    if (useUntimed) {
+      setUntimed(true);
+      clearTimer();
+      setSecondsLeft(0);
+      startedAtRef.current = Date.now();
+    } else {
+      startTimer();
+    }
     addOrUpdateSession(newSession);
     toast.success(
-      untimed ? "Drill started (untimed)" : "Interview started — good luck!"
+      useUntimed ? "Drill started (untimed)" : "Interview started — good luck!"
     );
   };
+
+  // Deep links from /questions: ?q=b01&autostart=1 or ?category=behavioral&autostart=1
+  useEffect(() => {
+    if (didAutostart.current) return;
+    if (!autostart) return;
+    if (phase !== "setup") return;
+    if (!bankQuestionId && !bankCategory) return;
+    didAutostart.current = true;
+    // Defer so role state is ready
+    const t = window.setTimeout(() => {
+      startInterview({
+        questionId: bankQuestionId || undefined,
+        category: bankCategory || undefined,
+        difficulty: bankDifficulty || undefined,
+        forceUntimed: Boolean(bankQuestionId),
+      });
+    }, 50);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on entry deep link
+  }, [autostart, bankQuestionId, bankCategory, bankDifficulty, phase]);
 
   const pauseSession = () => {
     if (!session || phase !== "live") return;
@@ -489,6 +618,34 @@ export default function InterviewPage() {
               voice. Progress saves automatically on this device.
             </p>
 
+            {(bankQuestionId || bankCategory || bankBanner) && (
+              <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+                <p className="font-medium text-foreground">
+                  {bankBanner ||
+                    (bankQuestionId
+                      ? `Loaded from question bank (${bankQuestionId})`
+                      : `Category filter: ${bankCategory}`)}
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  {autostart
+                    ? "Starting your practice set…"
+                    : "Press Start when ready, or adjust mode/role below."}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <a href="/questions">Back to question bank</a>
+                  </Button>
+                  {bankQuestionId && (
+                    <Button asChild size="sm" variant="ghost">
+                      <a href={`/questions/${bankQuestionId}`}>
+                        Question details
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 space-y-3">
               <p className="text-sm font-medium">Target role</p>
               <div className="flex flex-wrap gap-2">
@@ -619,7 +776,12 @@ export default function InterviewPage() {
             </div>
 
             <div className="mt-10 flex justify-center">
-              <Button variant="gradient" size="lg" onClick={startInterview}>
+              <Button
+                variant="gradient"
+                size="lg"
+                type="button"
+                onClick={() => startInterview()}
+              >
                 Begin interview
                 <ChevronRight className="h-4 w-4" />
               </Button>
