@@ -26,31 +26,43 @@ const features = [
     icon: Mic,
     title: "Live Mock Interviews",
     desc: "Timed questions with text or voice input and instant AI scoring.",
+    href: "/interview",
+    cta: "Start a mock interview",
   },
   {
     icon: Target,
     title: "Role-Tailored Prep",
     desc: "Software eng, PM, data, design, sales — or any custom role.",
+    href: "/roles",
+    cta: "Choose your target role",
   },
   {
     icon: FileText,
     title: "Resume Intelligence",
     desc: "Upload a PDF and get strengths plus interview talking points.",
+    href: "/resume",
+    cta: "Analyze your resume",
   },
   {
     icon: BarChart3,
     title: "Performance Analytics",
     desc: "Trends across clarity, technical depth, and confidence.",
+    href: "/analytics",
+    cta: "View your analytics",
   },
   {
     icon: Zap,
     title: "Company Styles",
     desc: "Practice Google, Meta, Amazon LP, Apple, Microsoft, and startup formats.",
+    href: "/interview?mode=company",
+    cta: "Practice company styles",
   },
   {
     icon: Sparkles,
     title: "Actionable Feedback",
     desc: "STAR coaching, sample answers, key phrases, and follow-ups.",
+    href: "/history",
+    cta: "See feedback & reports",
   },
 ];
 
@@ -151,21 +163,32 @@ export default function LandingPage() {
           className="mt-16 grid gap-4 sm:grid-cols-3"
         >
           {[
-            { label: "Avg. practice score lift", value: "+2.4 pts" },
-            { label: "Question bank", value: `${qCount}+` },
-            { label: "Feedback latency", value: "<1s*" },
+            {
+              label: "Avg. practice score lift",
+              value: "+2.4 pts",
+              href: "/analytics",
+            },
+            {
+              label: "Question bank",
+              value: `${qCount}+`,
+              href: "/questions",
+            },
+            {
+              label: "Feedback latency",
+              value: "<1s*",
+              href: "/interview",
+            },
           ].map((stat) => (
-            <Card
-              key={stat.label}
-              className="border-primary/10 bg-card/60 backdrop-blur"
-            >
-              <CardContent className="pt-6 text-center">
-                <p className="text-3xl font-bold text-primary">{stat.value}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {stat.label}
-                </p>
-              </CardContent>
-            </Card>
+            <Link key={stat.label} href={stat.href} className="block">
+              <Card className="h-full border-primary/10 bg-card/60 backdrop-blur transition-all hover:border-primary/40 hover:shadow-glow">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-3xl font-bold text-primary">{stat.value}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {stat.label}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </motion.div>
       </section>
@@ -191,17 +214,25 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Card className="h-full transition-shadow hover:shadow-glow">
-                  <CardContent className="pt-6">
-                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-primary">
-                      <f.icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="font-semibold">{f.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {f.desc}
-                    </p>
-                  </CardContent>
-                </Card>
+                <Link href={f.href} className="group block h-full">
+                  <Card className="h-full transition-all hover:border-primary/40 hover:shadow-glow">
+                    <CardContent className="flex h-full flex-col pt-6">
+                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-primary transition-transform group-hover:scale-105">
+                        <f.icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="font-semibold group-hover:text-primary">
+                        {f.title}
+                      </h3>
+                      <p className="mt-2 flex-1 text-sm text-muted-foreground">
+                        {f.desc}
+                      </p>
+                      <p className="mt-4 flex items-center gap-1 text-sm font-medium text-primary">
+                        {f.cta}
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               </motion.div>
             ))}
           </div>
