@@ -574,6 +574,39 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
   return {};
 }
 
+/** Passwordless email magic link (works without Google Cloud setup). */
+export async function signInWithEmailMagicLink(
+  email: string
+): Promise<{ error?: string; ok?: boolean }> {
+  const supabase = getSupabaseBrowser();
+  if (!supabase) {
+    return {
+      error:
+        "Cloud login is not configured. Add Supabase env vars (see SETUP.md).",
+    };
+  }
+  const trimmed = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { error: "Enter a valid email address." };
+  }
+
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback`
+      : undefined;
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: trimmed,
+    options: {
+      emailRedirectTo: redirectTo,
+      shouldCreateUser: true,
+    },
+  });
+
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
 export async function signInWithGitHub(): Promise<{ error?: string }> {
   const supabase = getSupabaseBrowser();
   if (!supabase) {

@@ -4,6 +4,7 @@ import { getUser, setUser } from "./storage";
 import {
   signInWithGoogle as cloudGoogle,
   signInWithGitHub as cloudGitHub,
+  signInWithEmailMagicLink as cloudEmail,
   signOutCloud,
 } from "./cloud-sync";
 import { isSupabaseConfigured } from "./supabase/client";
@@ -92,6 +93,18 @@ export async function signInWithGitHub(): Promise<{ error?: string }> {
     };
   }
   return cloudGitHub();
+}
+
+export async function signInWithEmail(
+  email: string
+): Promise<{ error?: string; ok?: boolean }> {
+  if (!isSupabaseConfigured()) {
+    return {
+      error:
+        "Cloud login needs Supabase. Env vars should already be set on Vercel.",
+    };
+  }
+  return cloudEmail(email);
 }
 
 export async function signOut(): Promise<void> {

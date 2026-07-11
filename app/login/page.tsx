@@ -18,16 +18,23 @@ import {
 import {
   signInWithGoogle,
   signInWithGitHub,
+  signInWithEmail,
   isSupabaseConfigured,
 } from "@/lib/auth";
 import { useApp } from "@/components/providers";
 import { hasLocalProgress } from "@/lib/storage";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isCloudUser, cloudEnabled } = useApp();
-  const [loading, setLoading] = useState<"google" | "github" | null>(null);
+  const [loading, setLoading] = useState<
+    "google" | "github" | "email" | null
+  >(null);
+  const [email, setEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
   const configured = isSupabaseConfigured() || cloudEnabled;
   const willMigrate = typeof window !== "undefined" && hasLocalProgress();
 
@@ -39,7 +46,11 @@ function LoginInner() {
     setLoading("google");
     const res = await signInWithGoogle();
     if (res.error) {
-      toast.error(res.error);
+      toast.error(
+        res.error.includes("provider is not enabled")
+          ? "Google isn’t enabled yet — use email magic link below, or finish Google Cloud setup."
+          : res.error
+      );
       setLoading(null);
     }
   };
@@ -48,9 +59,26 @@ function LoginInner() {
     setLoading("github");
     const res = await signInWithGitHub();
     if (res.error) {
-      toast.error(res.error);
+      toast.error(
+        res.error.includes("provider is not enabled")
+          ? "GitHub isn’t enabled yet — use email magic link below."
+          : res.error
+      );
       setLoading(null);
     }
+  };
+
+  const onEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading("email");
+    const res = await signInWithEmail(email);
+    setLoading(null);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    setEmailSent(true);
+    toast.success("Check your email for the sign-in link");
   };
 
   const oauthError = searchParams.get("error");
@@ -94,9 +122,49 @@ function LoginInner() {
               </p>
             )}
 
+            {/* Email magic link — works now without Google Cloud */}
+            <form onSubmit={onEmail} className="space-y-2">
+              <Label htmlFor="email">Email magic link (recommended)</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={!!loading || emailSent}
+                required
+              />
+              <Button
+                type="submit"
+                variant="gradient"
+                className="w-full"
+                disabled={!!loading || !configured || emailSent}
+              >
+                {loading === "email" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : emailSent ? (
+                  "Link sent — check your inbox"
+                ) : (
+                  "Email me a sign-in link"
+                )}
+              </Button>
+              {emailSent && (
+                <p className="text-xs text-muted-foreground">
+                  Open the link on this device. It signs you in and syncs local
+                  progress. Check spam if you don&apos;t see it in 1–2 minutes.
+                </p>
+              )}
+            </form>
+
+            <div className="relative py-1 text-center text-xs text-muted-foreground">
+              <span className="bg-card px-2 relative z-10">or</span>
+              <div className="absolute left-0 right-0 top-1/2 border-t border-border" />
+            </div>
+
             <Button
               type="button"
-              variant="gradient"
+              variant="outline"
               className="w-full"
               disabled={!!loading || !configured}
               onClick={onGoogle}
