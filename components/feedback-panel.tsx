@@ -16,11 +16,11 @@ import { scoreBg, cn } from "@/lib/utils";
 
 export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
   const metrics = [
-    { label: "Clarity", value: feedback.scores.clarity },
-    { label: "Relevance", value: feedback.scores.relevance },
-    { label: "Structure / STAR", value: feedback.scores.structure },
-    { label: "Technical", value: feedback.scores.technicalAccuracy },
-    { label: "Confidence", value: feedback.scores.confidence },
+    { label: "How clear", value: feedback.scores.clarity },
+    { label: "Did you answer it", value: feedback.scores.relevance },
+    { label: "STAR / structure", value: feedback.scores.structure },
+    { label: "Tech-y depth", value: feedback.scores.technicalAccuracy },
+    { label: "Main character energy", value: feedback.scores.confidence },
   ];
 
   return (
@@ -33,7 +33,7 @@ export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
         <div className="bg-gradient-to-r from-indigo-600/10 to-violet-600/10 px-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-muted-foreground">Overall Score</p>
+              <p className="text-sm text-muted-foreground">Your score, tbh</p>
               <p className="text-3xl font-bold tracking-tight">
                 {feedback.scores.overall}
                 <span className="text-lg text-muted-foreground">/10</span>
@@ -65,7 +65,7 @@ export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              Strengths
+              What slapped
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -84,7 +84,7 @@ export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Improvements
+              Fix these
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -104,11 +104,11 @@ export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Quote className="h-4 w-4 text-primary" />
-            Sample Better Answer
+            A stronger version
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm leading-relaxed text-muted-foreground">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
             {feedback.sampleBetterAnswer}
           </p>
         </CardContent>
@@ -118,7 +118,7 @@ export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-violet-500" />
-            Key Phrases to Use
+            Phrases to steal
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
@@ -135,7 +135,7 @@ export function FeedbackPanel({ feedback }: { feedback: AIFeedback }) {
           <CardContent className="flex gap-3 pt-6">
             <MessageSquareQuote className="h-5 w-5 shrink-0 text-primary" />
             <div>
-              <p className="text-sm font-medium">Follow-up from interviewer</p>
+              <p className="text-sm font-medium">They&apos;d probably follow up with</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {feedback.followUpQuestion}
               </p>

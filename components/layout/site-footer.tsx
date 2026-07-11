@@ -5,17 +5,17 @@ import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
 
 const links = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/roles", label: "Roles" },
-  { href: "/interview", label: "Interview" },
+  { href: "/dashboard", label: "Home" },
+  { href: "/roles", label: "Jobs" },
+  { href: "/interview", label: "Practice" },
   { href: "/resume", label: "Resume" },
-  { href: "/questions", label: "Questions" },
-  { href: "/history", label: "History" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/questions", label: "Question dump" },
+  { href: "/history", label: "Past runs" },
+  { href: "/analytics", label: "Stats" },
   { href: "/faq", label: "FAQ" },
   { href: "/privacy", label: "Privacy" },
   { href: "/settings", label: "Settings" },
-  { href: "/login", label: "Sign in" },
+  { href: "/login", label: "Log in" },
 ];
 
 export function SiteFooter() {
@@ -33,13 +33,13 @@ export function SiteFooter() {
             InterviewForge
           </div>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            AI interview coaching — practice, feedback, and progress that stays
-            private until you choose to sync.
+            Interview practice that talks like a real person. Your stuff stays on
+            this device until you hit sync — no sneaky cloud drama.
           </p>
         </div>
         <nav
           className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground"
-          aria-label="Footer"
+          aria-label="Footer links"
         >
           {links.map((l) => (
             <Link
@@ -53,8 +53,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t border-border/40 py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} InterviewForge · Built for candidates who
-        want to walk in ready
+        © {new Date().getFullYear()} InterviewForge · go get the bag (ethically)
       </div>
     </footer>
   );

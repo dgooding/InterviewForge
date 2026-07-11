@@ -7,7 +7,7 @@ export default function NotFound() {
       <p className="text-sm font-medium text-primary">404</p>
       <h1 className="mt-2 text-2xl font-bold">Page not found</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        That route doesn&apos;t exist. Head back to prep.
+        That route doesn&apos;t exist. Lowkey time to head back to prep.
       </p>
       <div className="mt-6 flex gap-3">
         <Button asChild variant="gradient">

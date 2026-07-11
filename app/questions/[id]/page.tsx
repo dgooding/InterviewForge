@@ -27,6 +27,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { casualTip, casualDifficulty, casualCategory } from "@/lib/voice";
 
 export default function QuestionDetailPage() {
   const params = useParams();
@@ -40,9 +41,9 @@ export default function QuestionDetailPage() {
   if (!id || !question) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold">Question not found</h1>
+        <h1 className="text-xl font-semibold">Question&apos;s not here</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          That ID is not in the bank. Browse the full list instead.
+          That ID isn&apos;t in the bank. Browse the full list instead.
         </p>
         <Button asChild className="mt-6" variant="gradient">
           <Link href="/questions">Question bank</Link>
@@ -62,13 +63,13 @@ export default function QuestionDetailPage() {
         <Button asChild variant="ghost" size="sm" className="mb-4 -ml-2">
           <Link href="/questions">
             <ArrowLeft className="h-4 w-4" />
-            Back to question bank
+            Back to the bank
           </Link>
         </Button>
 
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="capitalize">
-            {question.category}
+            {casualCategory(question.category)}
           </Badge>
           <Badge
             variant="secondary"
@@ -82,7 +83,7 @@ export default function QuestionDetailPage() {
                 "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
             )}
           >
-            {question.difficulty}
+            {casualDifficulty(question.difficulty)}
           </Badge>
           {question.companyStyle && (
             <Badge variant="outline" className="capitalize">
@@ -96,15 +97,15 @@ export default function QuestionDetailPage() {
           {question.text}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Practice this prompt in the simulator, review coaching tips, then try
-          related questions in the same category.
+          Practice this in the sim, peek at the tips, then hit related ones in
+          the same category. easy.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild variant="gradient">
             <Link href={practiceHref}>
               <Mic className="h-4 w-4" />
-              Practice this question
+              Practice this one
             </Link>
           </Button>
           <Button asChild variant="outline">
@@ -115,7 +116,7 @@ export default function QuestionDetailPage() {
           </Button>
           <Button asChild variant="outline">
             <Link href={modeHref}>
-              Open {mode} simulator
+              Open {mode} sim
             </Link>
           </Button>
         </div>
@@ -125,11 +126,13 @@ export default function QuestionDetailPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Lightbulb className="h-4 w-4 text-primary" />
-                Coaching tip
+                Quick tip
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{question.tips}</p>
+              <p className="text-sm text-muted-foreground">
+                {casualTip(question.tips)}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -142,7 +145,7 @@ export default function QuestionDetailPage() {
                 Answer outline
               </CardTitle>
               <CardDescription>
-                Structure to adapt — not a script to memorize.
+                Structure to riff on — not a script to memorize, ngl.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -158,9 +161,9 @@ export default function QuestionDetailPage() {
             <CardContent className="flex gap-3 p-4 text-sm text-muted-foreground">
               <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <p>
-                Use STAR (Situation, Task, Action, Result) for behavioral
-                prompts, or clarify requirements → approach → trade-offs for
-                technical ones. Start a practice session to get scored feedback.
+                STAR (Situation, Task, Action, Result) for behavioral stuff, or
+                requirements → approach → trade-offs for tech. Start a practice
+                session if you want scored feedback.
               </p>
             </CardContent>
           </Card>
@@ -170,7 +173,7 @@ export default function QuestionDetailPage() {
           <section className="mt-10">
             <h2 className="text-lg font-semibold">Related questions</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Same category — good follow-ups after you nail this one.
+              Same category — good follow-ups once you nail this one.
             </p>
             <ul className="mt-4 space-y-2">
               {related.map((r) => (
@@ -185,7 +188,7 @@ export default function QuestionDetailPage() {
                           {r.text}
                         </Link>
                         <p className="mt-1 text-xs capitalize text-muted-foreground">
-                          {r.difficulty} · {r.id}
+                          {casualDifficulty(r.difficulty)} · {r.id}
                         </p>
                       </div>
                       <div className="flex shrink-0 gap-2">

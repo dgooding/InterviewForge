@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { casualTip, casualDifficulty } from "@/lib/voice";
 
 /** Display-facing question shape (maps from bank data). */
 export interface Question {
@@ -62,7 +63,7 @@ const CATEGORY_LABEL: Record<InterviewQuestion["category"], Question["category"]
   };
 
 const CATEGORY_CHIPS: { value: string; label: string }[] = [
-  { value: "all", label: "All Categories" },
+  { value: "all", label: "All of 'em" },
   ...CATEGORIES.map((c) => ({
     value: c,
     label: CATEGORY_LABEL[c],
@@ -70,10 +71,10 @@ const CATEGORY_CHIPS: { value: string; label: string }[] = [
 ];
 
 const DIFFICULTY_CHIPS: { value: string; label: string }[] = [
-  { value: "all", label: "All Levels" },
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
+  { value: "all", label: "Any vibe" },
+  { value: "easy", label: "Chill" },
+  { value: "medium", label: "Solid" },
+  { value: "hard", label: "Spicy" },
 ];
 
 const CATEGORY_PILL: Record<string, string> = {
@@ -104,9 +105,7 @@ function toDisplayQuestion(q: InterviewQuestion): Question {
   return {
     id: q.id,
     text: q.text,
-    tip:
-      q.tips ||
-      defaultTip(q.category),
+    tip: casualTip(q.tips || defaultTip(q.category)),
     category: CATEGORY_LABEL[q.category],
     difficulty:
       q.difficulty === "easy"
@@ -119,22 +118,26 @@ function toDisplayQuestion(q: InterviewQuestion): Question {
   };
 }
 
+function displayDifficulty(d: Question["difficulty"]): string {
+  return casualDifficulty(d.toLowerCase());
+}
+
 function defaultTip(category: InterviewQuestion["category"]): string {
   switch (category) {
     case "behavioral":
     case "leadership":
     case "situational":
-      return "Use STAR: Situation → Task → Action → Result. Quantify impact.";
+      return "STAR it: Situation → Task → Action → Result. Numbers hit different.";
     case "technical":
-      return "Clarify constraints, outline your approach, then discuss trade-offs.";
+      return "Clarify constraints, outline your approach, then trade-offs. Don't just yap.";
     case "system-design":
-      return "Start with requirements, sketch components, then scale and failure modes.";
+      return "Requirements first, sketch the boxes, then scale + failure modes.";
     case "product":
-      return "Define user, goal, metrics, then options and why you chose one.";
+      return "Who's the user, what's the goal, which metrics, why this option.";
     case "company-culture":
-      return "Be specific and authentic — tie values to real examples.";
+      return "Be real — tie values to stuff you actually did.";
     default:
-      return "Structure your answer; lead with the point, then evidence.";
+      return "Lead with the point, then proof. Keep it tight.";
   }
 }
 
@@ -144,46 +147,46 @@ function structureTips(category: InterviewQuestion["category"]): string[] {
     case "leadership":
     case "situational":
       return [
-        "Situation — set context in 1–2 sentences",
-        "Task — your responsibility or goal",
-        "Action — what you did (emphasize ownership)",
-        "Result — measurable outcome + what you learned",
+        "Situation — set the scene in 1–2 sentences",
+        "Task — what you actually owned",
+        "Action — what YOU did (not the team, you)",
+        "Result — numbers + what you learned",
       ];
     case "technical":
       return [
-        "Restate the problem and constraints",
-        "Outline 1–2 approaches before coding/deep-diving",
-        "Explain complexity (time/space) when relevant",
-        "Call out edge cases and testing",
+        "Restate the problem + constraints",
+        "Sketch 1–2 approaches before diving deep",
+        "Drop complexity (time/space) when it matters",
+        "Call out edge cases + how you'd test",
       ];
     case "system-design":
       return [
         "Requirements (functional + non-functional)",
-        "High-level design (clients, services, data stores)",
-        "Deep dive on bottlenecks and scaling",
-        "Trade-offs, monitoring, and failure recovery",
+        "High-level design (clients, services, data)",
+        "Deep dive on bottlenecks + scale",
+        "Trade-offs, monitoring, recovery",
       ];
     case "product":
       return [
-        "Who is the user and what job are they hiring the product for?",
+        "Who's the user and what job are they hiring this for?",
         "Success metrics (north star + guardrails)",
-        "Options considered and prioritization",
-        "Rollout, risks, and iteration plan",
+        "Options you considered + why this one",
+        "Rollout, risks, how you'd iterate",
       ];
     default:
       return [
         "Lead with a clear thesis",
-        "Support with one concrete example",
-        "Close with impact or a thoughtful question",
+        "Back it with one real example",
+        "Close with impact or a sharp question",
       ];
   }
 }
 
 function followUps(q: Question): string[] {
   return [
-    `Can you go deeper on the most important decision in: “${q.text.slice(0, 60)}${q.text.length > 60 ? "…" : ""}”?`,
-    "What would you do differently with what you know now?",
-    "How did you measure success, and who disagreed with you?",
+    `Can you go deeper on the biggest decision in: “${q.text.slice(0, 60)}${q.text.length > 60 ? "…" : ""}”?`,
+    "What would you do different now that you know more?",
+    "How'd you measure success, and who fought you on it?",
   ];
 }
 
@@ -226,7 +229,7 @@ export default function QuestionsPage() {
       const next = toggleBookmarkedQuestion(id);
       setBookmarks(next);
       toast.message(
-        next.includes(id) ? "Saved to bookmarks" : "Removed from bookmarks",
+        next.includes(id) ? "Saved — bet" : "Unsaved",
         { id: `bm-${id}`, duration: 1800 }
       );
     },
@@ -295,15 +298,15 @@ export default function QuestionsPage() {
                 </span>
               </h1>
               <p className="mt-2 max-w-xl text-muted-foreground">
-                {getQuestionCount()}+ pre-loaded questions — filter, search, and
-                practice.
+                {getQuestionCount()}+ prompts loaded — filter, search, then
+                practice. lowkey stacked.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/80 px-3 py-1.5 text-sm font-medium shadow-sm backdrop-blur">
                 <BookOpen className="h-3.5 w-3.5 text-indigo-500" />
                 {filtered.length} question{filtered.length === 1 ? "" : "s"}{" "}
-                shown
+                showing
               </span>
               <Button asChild size="sm" variant="gradient" className="shadow-glow">
                 <Link
@@ -323,7 +326,7 @@ export default function QuestionsPage() {
                   }
                 >
                   <Mic className="h-4 w-4" />
-                  Start mock
+                  Start a mock
                 </Link>
               </Button>
             </div>
@@ -507,7 +510,7 @@ export default function QuestionsPage() {
                           DIFFICULTY_PILL[q.difficulty.toLowerCase()]
                         )}
                       >
-                        {q.difficulty}
+                        {displayDifficulty(q.difficulty)}
                       </span>
                     </div>
 
@@ -516,7 +519,7 @@ export default function QuestionsPage() {
                     </h2>
                     <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                       <span className="font-medium text-indigo-600/80 dark:text-indigo-400/90">
-                        Tip:{" "}
+                        Quick tip:{" "}
                       </span>
                       {q.tip}
                     </p>
@@ -554,10 +557,9 @@ export default function QuestionsPage() {
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500">
                 <Search className="h-6 w-6" />
               </div>
-              <h3 className="text-lg font-semibold">No questions match</h3>
+              <h3 className="text-lg font-semibold">Nothing matched, ngl</h3>
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Try a different search term or clear category and difficulty
-                filters.
+                Try different words or clear the filters. It&apos;s fine.
               </p>
               <Button
                 className="mt-6"
@@ -615,7 +617,7 @@ export default function QuestionsPage() {
                       )}
                       variant="outline"
                     >
-                      {selected.difficulty}
+                      {displayDifficulty(selected.difficulty)}
                     </Badge>
                     <span className="self-center text-[10px] font-mono text-muted-foreground">
                       ID: {selected.id}
@@ -642,7 +644,7 @@ export default function QuestionsPage() {
                 <section>
                   <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
                     <Lightbulb className="h-4 w-4" />
-                    Coaching tip
+                    Quick tip
                   </h3>
                   <p className="text-sm text-muted-foreground">{selected.tip}</p>
                 </section>
@@ -650,7 +652,7 @@ export default function QuestionsPage() {
                 <section>
                   <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
                     <ListTree className="h-4 w-4" />
-                    Answer structure
+                    How to structure it
                   </h3>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
                     {structureTips(selected.rawCategory).map((line) => (
@@ -665,7 +667,7 @@ export default function QuestionsPage() {
                 {selected.sampleAnswerOutline && (
                   <section>
                     <h3 className="mb-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
-                      Outline to adapt
+                      Outline to riff on
                     </h3>
                     <p className="whitespace-pre-wrap rounded-xl bg-muted/50 p-3 text-sm text-muted-foreground">
                       {selected.sampleAnswerOutline}
@@ -676,7 +678,7 @@ export default function QuestionsPage() {
                 <section>
                   <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
                     <MessageCircleQuestion className="h-4 w-4" />
-                    Likely follow-ups
+                    They might follow up with
                   </h3>
                   <ul className="space-y-2">
                     {followUps(selected).map((f) => (
@@ -695,7 +697,7 @@ export default function QuestionsPage() {
                 <Button asChild variant="gradient" className="flex-1 sm:flex-none">
                   <Link href={practiceHref(selected)}>
                     <Mic className="h-4 w-4" />
-                    Practice this question
+                    Practice this one
                   </Link>
                 </Button>
                 <Button

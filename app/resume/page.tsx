@@ -49,7 +49,7 @@ export default function ResumePage() {
   const analyze = useCallback(
     async (text: string, name: string) => {
       if (text.trim().length < 40) {
-        toast.error("Need at least ~40 characters of resume content.");
+        toast.error("Need at least ~40 characters of resume stuff, fr.");
         return;
       }
       setLoading(true);
@@ -74,7 +74,7 @@ export default function ResumePage() {
             source: "offline",
           };
           setResumeAnalysis(analysis);
-          toast.message("Used offline coach (API unavailable)");
+          toast.message("Used offline coach (API was mid)");
           return;
         }
 
@@ -99,9 +99,9 @@ export default function ResumePage() {
         setResumeAnalysis(analysis);
 
         if (data.source === "xai") {
-          toast.success("Resume analyzed with AI");
+          toast.success("Resume analyzed with AI — bet");
         } else {
-          toast.success("Resume analyzed (local coaching engine)");
+          toast.success("Resume analyzed (local coach)");
         }
       } catch {
         const local = generateLocalResumeAnalysis(text, name);
@@ -114,7 +114,7 @@ export default function ResumePage() {
           source: "offline",
         };
         setResumeAnalysis(analysis);
-        toast.message("Network offline — used local coaching engine");
+        toast.message("Offline rn — local coach took over");
       } finally {
         setLoading(false);
       }
@@ -127,17 +127,17 @@ export default function ResumePage() {
       const file = files[0];
       if (!file) return;
       if (file.size > 4 * 1024 * 1024) {
-        toast.error("Please upload a file under 4MB");
+        toast.error("Keep it under 4MB, please");
         return;
       }
       setFileName(file.name);
-      toast.message("Extracting text from resume…");
+      toast.message("Pulling text from your resume…");
       const { text, error } = await extractTextFromFile(file);
       if (error) setExtractHint(error);
       if (!text || text.trim().length < 40) {
         toast.error(
           error ||
-            "Couldn't extract text. Paste key bullets below instead."
+            "Couldn't grab the text. Paste the key bullets below instead."
         );
         return;
       }
@@ -161,7 +161,7 @@ export default function ResumePage() {
     setResumeAnalysis(null);
     setPasteText("");
     setExtractHint(null);
-    toast.message("Cleared — upload a new resume anytime");
+    toast.message("Cleared — drop a new resume whenever");
   };
 
   return (
@@ -173,8 +173,8 @@ export default function ResumePage() {
               Resume Intelligence
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Upload a PDF resume for strengths, gaps, experience highlights,
-              talking points, and sample interview answers.
+              Upload a PDF and get strengths, gaps, talking points, and sample
+              answers you can actually use. lowkey clutch.
             </p>
           </div>
           {resumeAnalysis && (
@@ -211,15 +211,15 @@ export default function ResumePage() {
               )}
               <p className="mt-4 font-medium">
                 {isDragActive
-                  ? "Drop your resume here"
-                  : "Drag & drop PDF or click to browse"}
+                  ? "Drop it here"
+                  : "Drag & drop a PDF or click to browse"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 PDF or TXT · max 4MB · parsed in-browser, then analyzed
               </p>
               {loading && (
                 <p className="mt-3 text-sm text-primary" role="status">
-                  Analyzing resume…
+                  Cooking your resume analysis…
                 </p>
               )}
             </div>
@@ -232,7 +232,7 @@ export default function ResumePage() {
 
             <div className="mt-6 space-y-2">
               <label htmlFor="resume-paste" className="text-sm font-medium">
-                Or paste resume text
+                Or just paste the text
               </label>
               <Textarea
                 id="resume-paste"
@@ -269,7 +269,7 @@ export default function ResumePage() {
                     }
                   >
                     <RefreshCw className="h-4 w-4" />
-                    Re-analyze
+                    Run it again
                   </Button>
                 )}
               </div>
@@ -312,7 +312,7 @@ export default function ResumePage() {
                     variant="outline"
                     onClick={async () => {
                       const ok = await copyToClipboard(resumeAnalysis.summary);
-                      toast.success(ok ? "Summary copied" : "Copy failed");
+                      toast.success(ok ? "Summary copied" : "Copy failed, ngl");
                     }}
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -327,8 +327,8 @@ export default function ResumePage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">ATS-style score</CardTitle>
                   <CardDescription>
-                    Local heuristic for keyword & impact signals — not an
-                    employer ATS guarantee.
+                    Local heuristic for keywords + impact signals — not a
+                    real employer ATS, tbh.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -352,7 +352,7 @@ export default function ResumePage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    Strengths
+                    What slapped
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -374,7 +374,7 @@ export default function ResumePage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    Gaps & improvements
+                    Gaps & upgrades
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -436,7 +436,7 @@ export default function ResumePage() {
                     const ok = await copyToClipboard(
                       resumeAnalysis.talkingPoints.join("\n• ")
                     );
-                    toast.success(ok ? "Talking points copied" : "Copy failed");
+                    toast.success(ok ? "Talking points copied" : "Copy failed, ngl");
                   }}
                 >
                   <Copy className="h-3.5 w-3.5" />
@@ -463,7 +463,7 @@ export default function ResumePage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <HelpCircle className="h-4 w-4 text-primary" />
-                    Suggested practice questions
+                    Practice questions to try
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -498,7 +498,7 @@ export default function ResumePage() {
                     Sample interview answers
                   </CardTitle>
                   <CardDescription>
-                    Use as outlines — personalize with your metrics
+                    Use as outlines — personalize with your metrics, fr
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -538,7 +538,7 @@ export default function ResumePage() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Briefcase className="h-4 w-4 text-primary" />
-                  Suggested roles
+                  Roles that fit
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
@@ -549,7 +549,7 @@ export default function ResumePage() {
                     variant="secondary"
                     onClick={() => {
                       setSelectedRole(r);
-                      toast.success(`Target role set: ${r}`);
+                      toast.success(`Bet — target role: ${r}`);
                     }}
                   >
                     {r}
@@ -562,11 +562,11 @@ export default function ResumePage() {
               <Button asChild variant="gradient">
                 <Link href="/interview">
                   <Mic className="h-4 w-4" />
-                  Practice with mock interview
+                  Practice with a mock
                 </Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/roles">Review all roles</Link>
+                <Link href="/roles">See all roles</Link>
               </Button>
             </div>
           </motion.div>

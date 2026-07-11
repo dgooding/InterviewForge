@@ -17,14 +17,13 @@ const siteUrl =
 
 export const metadata: Metadata = {
   title: {
-    default: "InterviewForge — Master Any Interview with AI",
+    default: "InterviewForge — stop bombing interviews",
     template: "%s | InterviewForge",
   },
   description:
-    "AI-powered job interview prep: mock interviews, resume intelligence, analytics, and private progress tracking. Practice behavioral, technical, and company-style questions.",
+    "Chill interview practice that keeps it honest. Mock rounds, resume tea, stats, and feedback that doesn't sound like a robot HR intern.",
   keywords: [
     "interview prep",
-    "AI interview coach",
     "mock interview",
     "STAR method",
     "resume analysis",
@@ -32,9 +31,9 @@ export const metadata: Metadata = {
   ],
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: "InterviewForge — Master Any Interview with AI",
+    title: "InterviewForge — stop bombing interviews",
     description:
-      "Practice interviews with AI feedback, resume insights, and progress that stays private until you sync.",
+      "Practice out loud, get blunt feedback, keep your progress private until you say otherwise.",
     url: siteUrl,
     siteName: "InterviewForge",
     type: "website",
@@ -42,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "InterviewForge",
-    description: "AI interview coaching for candidates who want to walk in ready.",
+    description: "Interview practice without the corporate cringe.",
   },
   manifest: "/manifest.webmanifest",
   icons: {

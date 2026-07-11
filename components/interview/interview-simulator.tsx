@@ -35,6 +35,7 @@ import {
   questionsFromJobDescription,
 } from "@/lib/ai-feedback";
 import { average } from "@/lib/utils";
+import { casualTip, casualDifficulty, casualCategory } from "@/lib/voice";
 import type {
   InterviewMode,
   CompanyStyle,
@@ -74,42 +75,42 @@ export const INTERVIEW_MODES: {
   {
     id: "behavioral",
     label: "Behavioral",
-    desc: "STAR stories, leadership, collaboration",
+    desc: "STAR stories, leadership vibes, collab moments",
     count: 8,
     href: "/interview/behavioral",
   },
   {
     id: "technical",
     label: "Technical",
-    desc: "Concepts, systems, role-specific depth",
+    desc: "Concepts, systems, role-specific deep dives",
     count: 8,
     href: "/interview/technical",
   },
   {
     id: "system-design",
     label: "System design",
-    desc: "Architecture, trade-offs, scale",
+    desc: "Architecture, trade-offs, scale — no cap",
     count: 6,
     href: "/interview/system-design",
   },
   {
     id: "mixed",
     label: "Mixed Mock",
-    desc: "Full simulation with 12 questions",
+    desc: "Full sim, 12 questions. kinda spicy",
     count: 12,
     href: "/interview/mixed",
   },
   {
     id: "company",
     label: "Company-Specific",
-    desc: "Google, Meta, Amazon LP styles, and more",
+    desc: "Google, Meta, Amazon LP styles, the works",
     count: 10,
     href: "/interview/company",
   },
   {
     id: "jd",
-    label: "From job description",
-    desc: "Paste a JD → tailored questions",
+    label: "From a JD",
+    desc: "Paste a job post → questions made for it",
     count: 8,
     href: "/interview/jd",
   },
@@ -333,7 +334,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
       !override?.category &&
       jdText.trim().length < 40
     ) {
-      toast.error("Paste a job description (at least ~40 characters).");
+      toast.error("Paste a JD first — need like ~40 characters, fr.");
       return;
     }
 
@@ -347,7 +348,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     });
 
     if (qs.length === 0) {
-      toast.error("No questions found for this setup. Try another mode.");
+      toast.error("No questions for this setup. Try another mode, ngl.");
       return;
     }
 
@@ -356,7 +357,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
         override?.questionId || bankQuestionId
       );
       if (primary) {
-        setBankBanner(`Practicing from bank: ${primary.text}`);
+        setBankBanner(`Drilling from the bank: ${primary.text}`);
         setMode(categoryToInterviewMode(primary.category));
       }
     } else if (override?.category || bankCategory) {
@@ -395,7 +396,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     }
     addOrUpdateSession(newSession);
     toast.success(
-      useUntimed ? "Drill started (untimed)" : "Interview started — good luck!"
+      useUntimed ? "Drill started (no timer)" : "Interview live — you got this!"
     );
   };
 
@@ -433,7 +434,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     };
     setSession(updated);
     addOrUpdateSession(updated);
-    toast.message("Session paused — resume anytime");
+    toast.message("Paused — hop back whenever");
   };
 
   const resumeSession = () => {
@@ -447,7 +448,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     addOrUpdateSession(updated);
     startTimer(session.pausedSecondsLeft ?? TIMER_SECONDS);
     setPhase("live");
-    toast.success("Resumed");
+    toast.success("We're back");
   };
 
   const askCoach = async () => {
@@ -466,12 +467,12 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Coach unavailable");
+        toast.error(data.error || "Coach is mid right now");
         return;
       }
       setCoachReply(data.reply);
     } catch {
-      toast.error("Could not reach coach");
+      toast.error("Couldn't reach the coach, ngl");
     } finally {
       setCoachLoading(false);
     }
@@ -488,7 +489,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
       return;
     }
     if (!speechOk) {
-      toast.error("Speech recognition not supported in this browser.");
+      toast.error("Speech recognition? Not in this browser, fr.");
       return;
     }
     const rec = createSpeechRecorder(
@@ -501,7 +502,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
         }
       },
       (err) => {
-        toast.error(`Mic error: ${err}`);
+        toast.error(`Mic issue: ${err}`);
         setRecording(false);
       }
     );
@@ -509,7 +510,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     recorderRef.current = rec;
     rec.start();
     setRecording(true);
-    toast.message("Listening… speak your answer");
+    toast.message("Listening… just talk");
   };
 
   const speakQuestion = () => {
@@ -558,7 +559,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     if (!currentQ || !session) return;
     const text = (answer + (interim ? ` ${interim}` : "")).trim();
     if (text.length < 10) {
-      toast.error("Write a bit more before submitting (10+ characters).");
+      toast.error("Write a bit more first (10+ characters), fr.");
       return;
     }
     stopRecording();
@@ -583,7 +584,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
           session.mode
         );
         applyFeedback(local, text, "offline");
-        toast.message("Used offline scoring (API error)");
+        toast.message("Used offline scoring (API was mid)");
         return;
       }
       applyFeedback(data.feedback as AIFeedback, text, data.source || "api");
@@ -594,7 +595,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
         session.mode
       );
       applyFeedback(local, text, "offline");
-      toast.message("Network offline — used local coaching engine");
+      toast.message("Offline rn — local coach took over");
     } finally {
       setSubmitting(false);
     }
@@ -629,7 +630,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
     if (overall >= 8) {
       confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 } });
     }
-    toast.success(`Session complete — overall ${overall.toFixed(1)}/10`);
+    toast.success(`Session done — overall ${overall.toFixed(1)}/10, bet`);
   };
 
   const timerPct = (secondsLeft / TIMER_SECONDS) * 100;
@@ -674,17 +675,17 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                 <p className="font-medium text-foreground">
                   {bankBanner ||
                     (bankQuestionId
-                      ? `Loaded from question bank (${bankQuestionId})`
+                      ? `Pulled from the bank (${bankQuestionId})`
                       : `Category filter: ${bankCategory}`)}
                 </p>
                 <p className="mt-1 text-muted-foreground">
                   {autostart
-                    ? "Starting your practice set…"
-                    : "Press Start when ready, or adjust role below."}
+                    ? "Firing up your practice set…"
+                    : "Hit Start when you're ready, or tweak the role below."}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button asChild size="sm" variant="outline">
-                    <a href="/questions">Back to question bank</a>
+                    <a href="/questions">Back to the bank</a>
                   </Button>
                   {bankQuestionId && (
                     <Button asChild size="sm" variant="ghost">
@@ -698,7 +699,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
             )}
 
             <div className="mt-6 space-y-3">
-              <p className="text-sm font-medium">Target role</p>
+              <p className="text-sm font-medium">Who you&apos;re going for</p>
               <div className="flex flex-wrap gap-2">
                 {searchRoles("", 8).map((r) => {
                   const active =
@@ -712,7 +713,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                       onClick={() => {
                         setCustomRole("");
                         setSelectedRole(r.title);
-                        toast.success(`Role set: ${r.title}`, {
+                        toast.success(`Bet — role set: ${r.title}`, {
                           id: "role-set",
                           duration: 1500,
                         });
@@ -746,7 +747,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                     setCustomRole(title);
                     setSelectedRole(title);
                   }
-                  toast.success(`Role set: ${title}`, {
+                  toast.success(`Bet — role set: ${title}`, {
                     id: "role-set",
                     duration: 1500,
                   });
@@ -801,9 +802,9 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
 
             {mode === "jd" && (
               <div className="mt-6 space-y-2">
-                <p className="text-sm font-medium">Paste job description</p>
+                <p className="text-sm font-medium">Paste the job description</p>
                 <Textarea
-                  placeholder="Paste the JD here — we'll generate tailored questions…"
+                  placeholder="Drop the JD here — we'll cook up questions from it…"
                   value={jdText}
                   onChange={(e) => setJdText(e.target.value)}
                   className="min-h-[140px]"
@@ -826,12 +827,12 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                 variant={untimed ? "default" : "outline"}
                 onClick={() => setUntimed(true)}
               >
-                Untimed drill
+                No timer
               </Button>
               <span className="text-xs text-muted-foreground">
                 {untimed
-                  ? "No countdown — practice at your pace"
-                  : "2-minute timer per question"}
+                  ? "No countdown — go at your pace"
+                  : "2-min timer per question, no cap"}
               </span>
             </div>
 
@@ -842,7 +843,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                 type="button"
                 onClick={() => startInterview()}
               >
-                Begin interview
+                Let&apos;s go
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -860,13 +861,13 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <Badge variant="secondary">
-                  Question {index + 1} of {questions.length}
+                  Q {index + 1} of {questions.length}
                 </Badge>
                 <Badge variant="outline" className="ml-2 capitalize">
-                  {currentQ.difficulty}
+                  {casualDifficulty(currentQ.difficulty)}
                 </Badge>
                 <Badge variant="outline" className="ml-2">
-                  {currentQ.category}
+                  {casualCategory(currentQ.category)}
                 </Badge>
               </div>
               {phase === "live" && !untimed && !paused && (
@@ -884,7 +885,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                 </div>
               )}
               {phase === "live" && untimed && (
-                <Badge variant="secondary">Untimed</Badge>
+                <Badge variant="secondary">No timer</Badge>
               )}
               {paused && <Badge variant="warning">Paused</Badge>}
             </div>
@@ -911,7 +912,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                   {currentQ.text}
                 </CardTitle>
                 {currentQ.tips && (
-                  <CardDescription>Tip: {currentQ.tips}</CardDescription>
+                  <CardDescription>Quick tip: {casualTip(currentQ.tips)}</CardDescription>
                 )}
               </CardHeader>
               {phase === "live" && (
@@ -919,7 +920,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                   {paused ? (
                     <div className="flex flex-col items-center gap-3 py-8 text-center">
                       <p className="text-muted-foreground">
-                        Session paused. Your draft answer is saved.
+                        Paused. Your draft&apos;s still here, no stress.
                       </p>
                       <Button variant="gradient" onClick={resumeSession}>
                         <Play className="h-4 w-4" />
@@ -936,7 +937,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                           onClick={speakQuestion}
                         >
                           <Volume2 className="h-4 w-4" />
-                          Read question
+                          Read it out
                         </Button>
                         <Button
                           type="button"
@@ -947,7 +948,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                           {recording ? (
                             <>
                               <MicOff className="h-4 w-4" />
-                              Stop recording
+                              Stop mic
                             </>
                           ) : (
                             <>
@@ -978,7 +979,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                       {coachOpen && (
                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2">
                           <Textarea
-                            placeholder="Ask the coach anything (STAR tips, nerves, technical depth…)"
+                            placeholder="Ask the coach anything (STAR tips, nerves, tech depth…)"
                             value={coachMsg}
                             onChange={(e) => setCoachMsg(e.target.value)}
                             className="min-h-[72px]"
@@ -992,7 +993,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                             {coachLoading ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              "Get tip"
+                              "Get a tip"
                             )}
                           </Button>
                           {coachReply && (
@@ -1003,7 +1004,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                         </div>
                       )}
                       <Textarea
-                        placeholder="Type your answer here… Use STAR for behavioral questions."
+                        placeholder="Type your answer… STAR for behavioral, ngl it helps."
                         value={
                           interim
                             ? `${answer}${answer ? " " : ""}${interim}`
@@ -1018,7 +1019,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                       />
                       {recording && (
                         <p className="animate-pulse-soft text-xs text-rose-500">
-                          ● Recording — speech will append to your answer
+                          ● Recording — speech gets slapped onto your answer
                         </p>
                       )}
                       <div className="flex justify-end gap-2">
@@ -1032,7 +1033,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                           ) : (
                             <Send className="h-4 w-4" />
                           )}
-                          Submit answer
+                          Submit
                         </Button>
                       </div>
                     </>
@@ -1045,7 +1046,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
               <>
                 {feedbackSource && (
                   <p className="text-xs text-muted-foreground">
-                    Feedback source:{" "}
+                    Feedback from:{" "}
                     {feedbackSource === "xai"
                       ? "AI enhanced"
                       : feedbackSource === "offline"
@@ -1064,7 +1065,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                   </Button>
                   <Button variant="gradient" onClick={nextQuestion}>
                     {index + 1 >= questions.length
-                      ? "Finish interview"
+                      ? "Finish it"
                       : "Next question"}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -1084,7 +1085,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-glow">
               <Flag className="h-8 w-8" />
             </div>
-            <h1 className="mt-6 text-3xl font-bold">Interview complete!</h1>
+            <h1 className="mt-6 text-3xl font-bold">That&apos;s a wrap!</h1>
             <p className="mt-2 text-muted-foreground">
               Overall score for this session
             </p>
@@ -1097,7 +1098,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button variant="outline" onClick={() => router.push("/history")}>
-                View history & export
+                History & export
               </Button>
               <Button variant="outline" onClick={() => router.push("/analytics")}>
                 Analytics
@@ -1114,7 +1115,7 @@ export function InterviewSimulator({ forcedMode }: InterviewSimulatorProps) {
                 }}
               >
                 <RotateCcw className="h-4 w-4" />
-                Practice again
+                Run it back
               </Button>
               <Button
                 variant="outline"

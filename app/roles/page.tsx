@@ -41,13 +41,13 @@ export default function RolesPage() {
     if (user) {
       setUser({ ...user, preferredRole: title });
     }
-    toast.success(`Target role set: ${title}`);
+    toast.success(`Bet — target role: ${title}`);
   };
 
   const selectCustom = () => {
     const t = custom.trim();
     if (!t) {
-      toast.error("Enter a custom role title");
+      toast.error("Type a custom role title first");
       return;
     }
     select(t);
@@ -59,15 +59,16 @@ export default function RolesPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Job Role Selector</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Pick your role</h1>
             <p className="mt-1 text-muted-foreground">
-              Choose a target role so questions and feedback stay relevant.
+              Lock a target role so questions + feedback actually match what
+              you&apos;re going for.
             </p>
           </div>
           {selectedRole && (
             <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
               <Check className="h-3.5 w-3.5" />
-              Selected: {selectedRole}
+              Locked in: {selectedRole}
             </Badge>
           )}
         </div>
@@ -133,11 +134,11 @@ export default function RolesPage() {
                         <CardContent>
                           {active ? (
                             <span className="text-xs font-medium text-primary">
-                              Currently selected
+                              Currently locked in
                             </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              Click to select
+                              Tap to select
                             </span>
                           )}
                         </CardContent>

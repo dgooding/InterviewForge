@@ -24,45 +24,45 @@ import { getQuestionCount } from "@/lib/questions";
 const features = [
   {
     icon: Mic,
-    title: "Live Mock Interviews",
-    desc: "Timed questions with text or voice input and instant AI scoring.",
+    title: "Fake interviews that feel real",
+    desc: "Timer's optional. Type or talk. We score you right after — no waiting around.",
     href: "/mock-interview",
-    cta: "Start a mock interview",
+    cta: "Bet, let's practice",
   },
   {
     icon: Target,
-    title: "Role-Tailored Prep",
-    desc: "Software eng, PM, data, design, sales — or any custom role.",
+    title: "Pick the job you're chasing",
+    desc: "SWE, PM, help desk, sales… whatever. We stop throwing random questions at you.",
     href: "/roles",
-    cta: "Choose your target role",
+    cta: "Pick my role",
   },
   {
     icon: FileText,
-    title: "Resume Intelligence",
-    desc: "Upload a PDF and get strengths plus interview talking points.",
+    title: "Your resume, but useful",
+    desc: "Drop a PDF. We tell you what's actually good and what to say out loud in interviews.",
     href: "/analyze-resume",
-    cta: "Analyze your resume",
+    cta: "Check my resume",
   },
   {
     icon: BarChart3,
-    title: "Performance Analytics",
-    desc: "Trends across clarity, technical depth, and confidence.",
+    title: "The numbers don't lie",
+    desc: "Are you clearer? More confident? Or still winging it? Charts that keep it real.",
     href: "/analytics",
-    cta: "View your analytics",
+    cta: "Show me my stats",
   },
   {
     icon: Zap,
-    title: "Company Styles",
-    desc: "Practice Google, Meta, Amazon LP, Apple, Microsoft, and startup formats.",
+    title: "Big-company vibes",
+    desc: "Google-y, Meta-y, Amazon LP energy, startup chaos — practice how they actually ask.",
     href: "/interview/company",
-    cta: "Practice company styles",
+    cta: "Do company mode",
   },
   {
     icon: Sparkles,
-    title: "Actionable Feedback",
-    desc: "STAR coaching, sample answers, key phrases, and follow-ups.",
+    title: "Feedback that isn't vague",
+    desc: "What you nailed, what was mid, a better answer, and phrases that sound human.",
     href: "/history",
-    cta: "See feedback & reports",
+    cta: "See past feedback",
   },
 ];
 
@@ -71,21 +71,21 @@ const testimonials = [
     name: "Alex Rivera",
     role: "SWE @ FAANG",
     quote:
-      "InterviewForge turned vague 'practice more' into a weekly system. My behavioral scores jumped in two weeks.",
+      "ngl I used to just panic-practice in the shower. This made me actually track stuff. Behavioral scores went up in like two weeks.",
     stars: 5,
   },
   {
     name: "Priya Shah",
     role: "Product Manager",
     quote:
-      "The company-specific modes and STAR feedback felt like a real coach. I walked into onsite loops calmer.",
+      "Company modes + STAR feedback felt less like homework and more like a blunt friend who wants you to get the offer.",
     stars: 5,
   },
   {
     name: "Jordan Lee",
     role: "Data Scientist",
     quote:
-      "Resume analysis + question bank was a killer combo. Perfect portfolio piece energy — and actually useful.",
+      "Resume tips + question bank is lowkey the combo. I walked into loops less sweaty. Still nervous. But less sweaty.",
     stars: 5,
   },
 ];
@@ -96,9 +96,8 @@ export default function LandingPage() {
 
   return (
     <div className="relative">
-      {/* Top bar for landing */}
       <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Flip light/dark">
           {theme === "dark" ? (
             <Sun className="h-4 w-4" />
           ) : (
@@ -106,14 +105,13 @@ export default function LandingPage() {
           )}
         </Button>
         <Button asChild variant="outline" size="sm">
-          <Link href="/login">Sign in</Link>
+          <Link href="/login">Log in</Link>
         </Button>
         <Button asChild variant="gradient" size="sm">
-          <Link href="/dashboard">Open app</Link>
+          <Link href="/dashboard">Just start</Link>
         </Button>
       </div>
 
-      {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 pb-20 pt-24 sm:px-6 sm:pt-32">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -126,42 +124,38 @@ export default function LandingPage() {
             className="mb-6 gap-1.5 px-3 py-1.5 text-sm"
           >
             <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-            AI-Powered Interview Coaching
+            Interview practice without the corporate cringe
           </Badge>
-          <p className="mb-4 text-lg font-semibold tracking-tight text-violet-400 sm:text-xl">
-            Dave are you shitting me?
-          </p>
           <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-            Master Any Interview{" "}
+            Stop bombing interviews{" "}
             <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">
-              with AI
+              for free
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">
-            InterviewForge is your personal coach for behavioral, technical, and
-            company-specific interviews — with instant scoring, STAR feedback,
-            and analytics that show real progress.
+            InterviewForge is the chill practice buddy who still keeps it honest.
+            Mock rounds, real feedback, STAR stories that don&apos;t sound like a
+            robot wrote them — and stats so you know if you&apos;re actually getting better.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" variant="gradient" className="gap-2">
               <Link href="/dashboard">
-                Start free prep
+                I&apos;m ready, let&apos;s go
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/interview">Mock interview</Link>
+              <Link href="/interview">Jump into a mock</Link>
             </Button>
             <Button asChild size="lg" variant="ghost">
-              <Link href="/login">Sign in to sync</Link>
+              <Link href="/login">Log in so it syncs</Link>
             </Button>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            {qCount}+ questions · Guest mode works offline · Optional Google sync
+            {qCount}+ questions · guest mode is free · login is optional, lowkey
           </p>
         </motion.div>
 
-        {/* Feature preview cards */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -170,18 +164,18 @@ export default function LandingPage() {
         >
           {[
             {
-              label: "Avg. practice score lift",
+              label: "How much people usually level up",
               value: "+2.4 pts",
               href: "/analytics",
             },
             {
-              label: "Question bank",
+              label: "Questions we actually have",
               value: `${qCount}+`,
               href: "/questions",
             },
             {
-              label: "Feedback latency",
-              value: "<1s*",
+              label: "How fast feedback hits",
+              value: "basically now*",
               href: "/interview",
             },
           ].map((stat) => (
@@ -199,16 +193,15 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Features */}
       <section className="border-y border-border/50 bg-card/30 py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Everything you need to walk in ready
+              Everything you need so you don&apos;t freeze
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Built like a polished SaaS — designed to impress and actually help
-              you prep.
+              Looks fancy. Talks normal. Actually helps you prep instead of
+              lecturing you.
             </p>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -245,11 +238,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-bold tracking-tight">
-            Loved by candidates leveling up
+            People who used this and stopped spiraling
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {testimonials.map((t) => (
@@ -277,19 +269,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="pb-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-indigo-600/10 via-violet-600/10 to-transparent">
             <CardContent className="flex flex-col items-center gap-6 px-8 py-12 text-center sm:px-16">
               <h2 className="text-3xl font-bold">
-                Your next offer starts with better practice
+                Your next offer starts with less awkward practice
               </h2>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 {[
-                  "Instant AI feedback on every answer",
-                  "Progress saved locally (Supabase-ready)",
-                  "Export PDF reports for reflection",
+                  "Instant feedback so you're not guessing",
+                  "Stuff saves on your laptop first (you control the cloud)",
+                  "PDF reports if you like staring at receipts of growth",
                 ].map((item) => (
                   <li key={item} className="flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -299,13 +290,12 @@ export default function LandingPage() {
               </ul>
               <Button asChild size="lg" variant="gradient">
                 <Link href="/dashboard">
-                  Start Free Prep
+                  Okay fine, I&apos;ll practice
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
               <p className="text-xs text-muted-foreground">
-                *Local heuristic engine is instant; xAI-enhanced feedback depends
-                on network.
+                *Local scoring is instant. Fancy AI mode needs wifi. Life is hard.
               </p>
             </CardContent>
           </Card>
@@ -315,14 +305,14 @@ export default function LandingPage() {
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
         <nav className="mb-4 flex flex-wrap justify-center gap-x-4 gap-y-2">
           {[
-            ["/dashboard", "Dashboard"],
-            ["/interview", "Interview"],
-            ["/questions", "Questions"],
-            ["/roles", "Roles"],
+            ["/dashboard", "Home base"],
+            ["/interview", "Practice"],
+            ["/questions", "Question dump"],
+            ["/roles", "Jobs"],
             ["/resume", "Resume"],
-            ["/login", "Sign in"],
-            ["/faq", "FAQ"],
-            ["/privacy", "Privacy"],
+            ["/login", "Log in"],
+            ["/faq", "FAQ (the real ones)"],
+            ["/privacy", "Privacy (chill)"],
           ].map(([href, label]) => (
             <Link
               key={href}
@@ -334,8 +324,8 @@ export default function LandingPage() {
           ))}
         </nav>
         <p>
-          © {new Date().getFullYear()} InterviewForge · Built as a production-grade
-          proof of concept
+          © {new Date().getFullYear()} InterviewForge · built so you stop
+          winging it
         </p>
       </footer>
     </div>

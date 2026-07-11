@@ -70,7 +70,7 @@ export default function SettingsPage() {
   const onDeleteAll = async () => {
     if (!confirmDelete) {
       setConfirmDelete(true);
-      toast.message("Click delete again to confirm permanent wipe");
+      toast.message("Hit delete again if you really want it gone");
       return;
     }
     setBusy(true);
@@ -87,7 +87,7 @@ export default function SettingsPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">Settings & privacy</h1>
         <p className="mt-1 text-muted-foreground">
-          You own your interview data. Choose how it is stored.
+          Your interview data is yours. Pick how it lives.
         </p>
 
         {/* System / feature readiness */}
@@ -98,8 +98,8 @@ export default function SettingsPage() {
               System status
             </CardTitle>
             <CardDescription>
-              Core product works without cloud config. Supabase enables Google
-              sync; xAI upgrades AI quality.
+              Core stuff works with zero cloud setup. Supabase = Google sync;
+              xAI = smarter AI vibes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
@@ -112,7 +112,7 @@ export default function SettingsPage() {
               <StatusRow
                 ok
                 label="Resume · Interview · History · Analytics"
-                detail="Fully implemented"
+                detail="Fully built, not fake"
               />
               <StatusRow
                 ok={Boolean(health?.config.supabase ?? cloudEnabled)}
@@ -120,7 +120,7 @@ export default function SettingsPage() {
                 detail={
                   health?.config.supabase || cloudEnabled
                     ? "Configured"
-                    : "Add env vars — see SETUP.md"
+                    : "Add env vars — peep SETUP.md"
                 }
               />
               <StatusRow
@@ -129,7 +129,7 @@ export default function SettingsPage() {
                 detail={
                   health?.config.xai
                     ? "Configured (enhanced AI)"
-                    : "Optional — local coach active"
+                    : "Optional — local coach still works"
                 }
               />
             </div>
@@ -175,22 +175,22 @@ export default function SettingsPage() {
             </CardTitle>
             <CardDescription>
               {isCloudUser
-                ? "Signed in — progress syncs to your private cloud account (RLS protected)."
-                : "Guest mode — all progress stays in this browser only. Nothing is uploaded."}
+                ? "Logged in — progress syncs to your private cloud account (RLS locked down)."
+                : "Guest mode — everything stays in this browser. Nothing gets uploaded."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={isCloudUser ? "default" : "secondary"}>
-                {isCloudUser ? "Signed in" : "Anonymous guest"}
+                {isCloudUser ? "Logged in" : "Anonymous guest"}
               </Badge>
               {isCloudUser && (
                 <Badge variant={cloudOnline ? "success" : "warning"}>
-                  {cloudOnline ? "Cloud reachable" : "Cloud offline (local cache)"}
+                  {cloudOnline ? "Cloud online" : "Cloud offline (local cache)"}
                 </Badge>
               )}
               {!cloudEnabled && (
-                <Badge variant="outline">Cloud login not configured</Badge>
+                <Badge variant="outline">Cloud login not set up</Badge>
               )}
             </div>
 
@@ -228,19 +228,19 @@ export default function SettingsPage() {
                     onClick={async () => {
                       await signOut();
                       toast.success(
-                        "Signed out. Progress remains on this device only."
+                        "Logged out. Progress stays on this device only."
                       );
                     }}
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    Log out
                   </Button>
                 </>
               ) : (
                 <Button asChild variant="gradient" size="sm">
                   <Link href="/login">
                     <LogIn className="h-4 w-4" />
-                    Sign in with Google
+                    Log in with Google
                   </Link>
                 </Button>
               )}
@@ -253,29 +253,29 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Shield className="h-5 w-5 text-emerald-500" />
-              Privacy principles
+              Privacy, straight up
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                Guest progress never leaves this browser until you sign in.
+                Guest progress never leaves this browser until you log in.
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                Cloud data is scoped to your account with row-level security —
-                other users cannot read your rows.
+                Cloud data is locked to your account with row-level security —
+                other people can&apos;t read your rows.
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                You can export or permanently delete your data at any time.
+                Export or fully delete your data whenever. Your call.
               </li>
               <li className="flex gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                If you use AI scoring/resume analysis, the text you submit is
-                sent to the analysis API for that request only (not stored as
-                your long-term progress store).
+                If you use AI scoring / resume analysis, the text you submit
+                goes to the analysis API for that request only (not your
+                long-term progress dump).
               </li>
             </ul>
           </CardContent>
@@ -286,7 +286,7 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-lg">Your data</CardTitle>
             <CardDescription>
-              Export a private JSON backup, or wipe everything.
+              Export a private JSON backup, or nuke everything.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -309,7 +309,7 @@ export default function SettingsPage() {
                   onClick={() => {
                     if (
                       window.confirm(
-                        "Delete all practice data on this device? This cannot be undone."
+                        "Delete all practice data on this device? No take-backs."
                       )
                     ) {
                       deleteLocalProgress();
@@ -332,9 +332,9 @@ export default function SettingsPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Full wipe removes interviews, resume analysis, and streak
+                Full wipe yeets interviews, resume analysis, and streak
                 {isCloudUser ? " from your account and this device" : " from this device"}
-                . It does not delete your Google account.
+                . Doesn&apos;t delete your Google account.
               </p>
             </div>
           </CardContent>

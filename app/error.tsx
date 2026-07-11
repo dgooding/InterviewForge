@@ -19,10 +19,10 @@ export default function GlobalError({
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
       <AlertTriangle className="mb-4 h-10 w-10 text-amber-500" aria-hidden />
-      <h1 className="text-2xl font-bold">Something went wrong</h1>
+      <h1 className="text-2xl font-bold">Something broke</h1>
       <p className="mt-2 max-w-md text-sm text-muted-foreground">
-        An unexpected error occurred. You can try again or return to the
-        dashboard — your local progress should still be saved.
+        Unexpected error, ngl. Try again or bounce back to the dashboard —
+        your local progress should still be there.
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <Button onClick={reset} variant="gradient">

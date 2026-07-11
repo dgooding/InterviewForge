@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">Privacy</h1>
         <p className="mt-1 text-muted-foreground">
-          How InterviewForge handles your practice data.
+          How InterviewForge handles your practice data — straight talk.
         </p>
 
         <div className="mt-8 space-y-4">
@@ -26,10 +26,9 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                If you use the app as a guest, interview history, resume
-                analysis, streak, and preferences are stored in your browser
-                (localStorage). We do not receive that progress data until you
-                choose to sign in.
+                Guest mode? Interview history, resume analysis, streak, and
+                prefs live in your browser (localStorage). We don&apos;t get
+                that progress until you choose to log in.
               </p>
             </CardContent>
           </Card>
@@ -39,12 +38,12 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                If you sign in (Google / email when configured), progress is
-                stored in your private Supabase account protected by row-level
-                security. Local guest data is merged only after you sign in.
+                If you log in (Google / email when it&apos;s set up), progress
+                goes to your private Supabase account with row-level security.
+                Local guest data only merges after you log in.
               </p>
               <Button asChild size="sm" variant="outline" className="mt-2">
-                <Link href="/login">Sign in options</Link>
+                <Link href="/login">Log in options</Link>
               </Button>
             </CardContent>
           </Card>
@@ -54,10 +53,9 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                When you submit an answer or resume for analysis, that text is
-                processed by our API (and optionally xAI/Grok) to generate
-                feedback for that request. It is not used to build advertising
-                profiles.
+                When you submit an answer or resume for analysis, that text hits
+                our API (and optionally xAI/Grok) to generate feedback for that
+                request. Not used to build ad profiles. No creepy stuff.
               </p>
             </CardContent>
           </Card>
@@ -67,8 +65,8 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                You can export progress JSON or wipe local and cloud data from
-                Settings at any time.
+                Export progress as JSON or wipe local + cloud data from Settings
+                whenever you want. Your call, always.
               </p>
               <Button asChild size="sm" variant="outline" className="mt-2">
                 <Link href="/settings">Open settings</Link>

@@ -27,13 +27,13 @@ import { UserMenu } from "@/components/layout/user-menu";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/roles", label: "Roles", icon: Briefcase },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/roles", label: "Jobs", icon: Briefcase },
   { href: "/resume", label: "Resume", icon: FileText },
-  { href: "/interview", label: "Interview", icon: Mic },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/questions", label: "Questions", icon: BookOpen },
-  { href: "/history", label: "History", icon: History },
+  { href: "/interview", label: "Practice", icon: Mic },
+  { href: "/analytics", label: "Stats", icon: BarChart3 },
+  { href: "/questions", label: "Qs", icon: BookOpen },
+  { href: "/history", label: "Past runs", icon: History },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -100,7 +100,7 @@ export function Navbar() {
             size="icon"
             className="h-9 w-9"
             onClick={toggleTheme}
-            aria-label="Toggle theme"
+            aria-label="Flip light/dark mode"
           >
             {theme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -115,14 +115,14 @@ export function Navbar() {
             <Button asChild size="sm" variant="gradient" className="hidden sm:inline-flex">
               <Link href="/login">
                 <LogIn className="h-4 w-4" />
-                Sign in
+                Log in
               </Link>
             </Button>
           )}
 
           {!isCloudUser && cloudEnabled && (
             <Button asChild size="sm" variant="outline" className="hidden xl:inline-flex">
-              <Link href="/login">Sync</Link>
+              <Link href="/login">Sync it</Link>
             </Button>
           )}
 
@@ -131,7 +131,7 @@ export function Navbar() {
             size="icon"
             className="h-9 w-9 lg:hidden"
             onClick={() => setOpen(!open)}
-            aria-label="Menu"
+            aria-label="Open menu"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -171,7 +171,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-muted dark:text-rose-400"
               >
                 <LogOut className="h-4 w-4" />
-                Sign out
+                Log out
               </button>
             ) : (
               <Link
@@ -180,7 +180,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary"
               >
                 <LogIn className="h-4 w-4" />
-                Sign in
+                Log in
               </Link>
             )}
           </nav>

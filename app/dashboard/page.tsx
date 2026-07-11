@@ -43,31 +43,31 @@ export default function DashboardPage() {
   const recommendations = [
     {
       title: selectedRole
-        ? `Practice ${selectedRole}`
-        : "Pick a target role",
+        ? `Drill ${selectedRole}`
+        : "Pick a role first",
       desc: selectedRole
-        ? "Start a mixed mock interview tailored to your role."
-        : "Choose Software Engineer, PM, and more.",
+        ? "Hop into a mixed mock built for that role."
+        : "Software Engineer, PM, whatever you're aiming for.",
       href: selectedRole ? "/interview/mixed" : "/roles",
       icon: Briefcase,
     },
     {
-      title: resumeAnalysis ? "Review resume insights" : "Upload your resume",
+      title: resumeAnalysis ? "Peep resume insights" : "Drop your resume",
       desc: resumeAnalysis
-        ? "Use talking points in your next session."
-        : "Get AI strengths & talking points from a PDF.",
+        ? "Steal those talking points for your next run."
+        : "Upload a PDF — get strengths + talking points, no cap.",
       href: "/resume",
       icon: FileText,
     },
     {
       title: "Behavioral STAR drill",
-      desc: "Sharpen structure with timed behavioral questions.",
+      desc: "Timed behaviorals so your stories don't flop.",
       href: "/interview/behavioral",
       icon: Mic,
     },
     {
       title: "Question bank",
-      desc: "Search 500+ prompts and practice any one.",
+      desc: "500+ prompts. Search, pick one, grind it.",
       href: "/questions",
       icon: Target,
     },
@@ -85,16 +85,16 @@ export default function DashboardPage() {
               Hey, {user?.name?.split(" ")[0] || "there"} 👋
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Here&apos;s your interview prep command center.
+              Your interview prep HQ. Stop bombing interviews.
               {user?.isCloud && !user.isGuest
                 ? " Progress syncs privately to your account."
-                : " Progress is saved on this device. Sign in anytime to sync."}
+                : " Stuff saves on this device. Log in anytime if you want it everywhere."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {!(user?.isCloud && !user.isGuest) && (
               <Button asChild variant="outline">
-                <Link href="/login">Save across devices</Link>
+                <Link href="/login">Sync to other devices</Link>
               </Button>
             )}
             <Button asChild variant="outline">
@@ -102,7 +102,7 @@ export default function DashboardPage() {
             </Button>
             <Button asChild variant="gradient">
               <Link href="/interview">
-                Start practice
+                Start practicing
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -115,22 +115,22 @@ export default function DashboardPage() {
             {
               href: "/interview",
               title: "Mock interview",
-              desc: "Timed or untimed · voice + AI feedback",
+              desc: "Timed or chill · voice + AI feedback",
             },
             {
               href: "/resume",
-              title: "Resume intelligence",
+              title: "Resume check",
               desc: "PDF upload · ATS · talking points",
             },
             {
               href: "/history",
               title: "History & PDF",
-              desc: "Past sessions · export reports",
+              desc: "Old sessions · export reports",
             },
             {
               href: "/analytics",
               title: "Analytics",
-              desc: "Trends · category scores",
+              desc: "Trends · how mid your scores are",
             },
           ].map((item) => (
             <Link
@@ -150,7 +150,7 @@ export default function DashboardPage() {
             {
               label: "Overall score",
               value: stats.averageScore ? stats.averageScore.toFixed(1) : "—",
-              sub: "Average across sessions",
+              sub: "Avg across sessions",
               icon: Trophy,
               color: "text-amber-500",
               href: "/analytics",
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             {
               label: "Day streak",
               value: String(stats.streak),
-              sub: "Keep the fire going",
+              sub: "Don't break it ngl",
               icon: Flame,
               color: "text-orange-500",
               href: "/interview",
@@ -166,7 +166,7 @@ export default function DashboardPage() {
             {
               label: "Sessions",
               value: String(stats.totalSessions),
-              sub: "Completed mock interviews",
+              sub: "Mocks you've finished",
               icon: Target,
               color: "text-indigo-500",
               href: "/history",
@@ -174,7 +174,7 @@ export default function DashboardPage() {
             {
               label: "Best score",
               value: stats.bestScore ? stats.bestScore.toFixed(1) : "—",
-              sub: "Personal record",
+              sub: "Your high score",
               icon: TrendingUp,
               color: "text-emerald-500",
               href: "/analytics",
@@ -203,7 +203,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="text-lg">Score trends</CardTitle>
               <CardDescription>
-                Your last sessions at a glance
+                Last few sessions, vibes check
               </CardDescription>
             </CardHeader>
             <CardContent className="h-64">
@@ -253,9 +253,9 @@ export default function DashboardPage() {
               ) : (
                 <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
                   <Clock className="mb-2 h-8 w-8 opacity-40" />
-                  <p className="text-sm">No sessions yet</p>
+                  <p className="text-sm">No sessions yet — go do one</p>
                   <Button asChild variant="link" className="mt-1">
-                    <Link href="/interview">Run your first mock interview</Link>
+                    <Link href="/interview">Run your first mock</Link>
                   </Button>
                 </div>
               )}
@@ -265,8 +265,8 @@ export default function DashboardPage() {
           {/* Recommended */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Recommended practice</CardTitle>
-              <CardDescription>Next best actions</CardDescription>
+              <CardTitle className="text-lg">What to do next</CardTitle>
+              <CardDescription>Lowkey good moves rn</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {recommendations.map((r) => (
@@ -293,16 +293,16 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg">Past sessions</CardTitle>
-              <CardDescription>Your recent mock interviews</CardDescription>
+              <CardDescription>Your recent mocks</CardDescription>
             </div>
             <Button asChild variant="outline" size="sm">
-              <Link href="/history">View all</Link>
+              <Link href="/history">See all</Link>
             </Button>
           </CardHeader>
           <CardContent>
             {recent.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                Complete a session to see history here.
+                Finish a session and it&apos;ll show up here.
               </p>
             ) : (
               <div className="divide-y divide-border">
@@ -318,7 +318,7 @@ export default function DashboardPage() {
                         {s.companyStyle ? ` · ${s.companyStyle}` : ""} ·{" "}
                         {s.completedAt
                           ? formatRelative(s.completedAt)
-                          : "In progress"}
+                          : "Still going"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

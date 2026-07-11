@@ -88,27 +88,27 @@ function scoreConfidence(text: string): number {
 
 function buildStrengths(scores: AnswerScores, text: string): string[] {
   const s: string[] = [];
-  if (scores.clarity >= 7) s.push("Clear and well-paced delivery with readable structure.");
-  if (scores.structure >= 7) s.push("Strong use of situation → action → result framing.");
-  if (scores.technicalAccuracy >= 7) s.push("Solid technical vocabulary and reasoned trade-offs.");
-  if (scores.confidence >= 7) s.push("Confident ownership language — you sound like a driver, not a passenger.");
-  if (/\d/.test(text)) s.push("You included concrete numbers or metrics — interviewers love this.");
-  if (s.length === 0) s.push("You engaged with the question and provided a substantive attempt.");
+  if (scores.clarity >= 7) s.push("Ok this was actually clear — people could follow you without rewinding.");
+  if (scores.structure >= 7) s.push("You used a real story arc (setup → you did stuff → it landed). That's the game.");
+  if (scores.technicalAccuracy >= 7) s.push("You sounded like you actually know the tech, not like you googled buzzwords 5 min ago.");
+  if (scores.confidence >= 7) s.push("You said \"I\" and meant it — main character energy, not side character vibes.");
+  if (/\d/.test(text)) s.push("You threw in real numbers. Interviewers melt for that. Keep doing it.");
+  if (s.length === 0) s.push("You showed up and answered. That's more than half the people who freeze. Now make it sharper.");
   return s.slice(0, 4);
 }
 
 function buildImprovements(scores: AnswerScores, text: string, mode: InterviewMode): string[] {
   const s: string[] = [];
-  if (scores.clarity < 7) s.push("Tighten the narrative: aim for 60–90 seconds with a crisp opening sentence.");
+  if (scores.clarity < 7) s.push("Be shorter and clearer — like 60–90 seconds, first sentence actually goes somewhere.");
   if (scores.structure < 7 && (mode === "behavioral" || mode === "mixed" || mode === "company"))
-    s.push("Use full STAR: Situation, Task, Action (with 'I'), Result (with metrics).");
-  if (scores.relevance < 7) s.push("Mirror keywords from the question early so relevance is obvious.");
+    s.push("Hit full STAR for real: Situation, Task, Action (say I), Result (with a number if you can).");
+  if (scores.relevance < 7) s.push("Answer the actual question first. Echo their words early so they know you're not freestyling.");
   if (scores.technicalAccuracy < 7 && (mode === "technical" || mode === "mixed"))
-    s.push("Add one concrete example, complexity note, or trade-off to deepen technical credibility.");
-  if (scores.confidence < 7) s.push("Replace hedging phrases with decisive ownership language.");
-  if (wordCount(text) < 40) s.push("Expand with specifics — short answers leave interviewers guessing.");
-  if ((text.match(FILLER) || []).length > 2) s.push("Reduce filler words for a more polished delivery.");
-  if (s.length === 0) s.push("Level up with a sharper closing line that ties back to the role.");
+    s.push("Drop one real example or trade-off. \"It depends\" without receipts is mid.");
+  if (scores.confidence < 7) s.push("Kill the \"maybe / I guess / sort of\" — just say what you did.");
+  if (wordCount(text) < 40) s.push("That was short. Add specifics or they'll assume you made it up.");
+  if ((text.match(FILLER) || []).length > 2) s.push("Cut the um/like/you know spam. You sound smarter when you pause instead.");
+  if (s.length === 0) s.push("End with one line that ties back to the job. Don't just trail off.");
   return s.slice(0, 4);
 }
 
@@ -535,7 +535,7 @@ function sampleBetterAnswer(question: string, mode: InterviewMode): string {
   const qShort = question.replace(/\s+/g, " ").trim();
   const opener =
     qShort.length > 12
-      ? `Here's how I'd answer a question like this in a real interview — a specific story, not a template:\n\n`
+      ? `Ok real talk — here's a sample answer that doesn't sound like a LinkedIn bot:\n\n`
       : "";
 
   return opener + formatStarStory(story);
@@ -544,38 +544,38 @@ function sampleBetterAnswer(question: string, mode: InterviewMode): string {
 function keyPhrases(mode: InterviewMode): string[] {
   if (mode === "technical") {
     return [
-      "The main trade-off is…",
-      "I'd start with the simplest correct design…",
-      "At scale, the bottleneck becomes…",
-      "I'd measure success with…",
-      "Failure mode I'd watch for…",
+      "The trade-off I picked was…",
+      "Simplest thing that actually works first…",
+      "When it gets huge, the bottleneck is…",
+      "I'd know it worked if…",
+      "The failure mode I'd watch is…",
     ];
   }
   return [
-    "The situation was…",
-    "My specific responsibility was…",
-    "I decided to… because…",
-    "The measurable result was…",
-    "What I learned and applied next was…",
+    "So basically what happened was…",
+    "My job in that mess was…",
+    "I went with X because…",
+    "What actually changed was…",
+    "Next time I wouldn't sleep on…",
   ];
 }
 
 function followUp(scores: AnswerScores, mode: InterviewMode): string | undefined {
   if (scores.overall >= 8.5) {
     return mode === "technical"
-      ? "Interesting. How would your design change under 10x traffic?"
-      : "Strong answer. What would you do differently if you faced that situation again today?";
+      ? "Ok that slapped. What changes if traffic is 10x overnight?"
+      : "Not bad. What would you do different if that happened again tomorrow?";
   }
   if (scores.structure < 6) {
-    return "Can you restate that using STAR, focusing on your personal actions and the result?";
+    return "Do that again but STAR it — what YOU did, and how it ended.";
   }
   if (scores.technicalAccuracy < 6 && mode !== "behavioral") {
-    return "Could you go one level deeper on the technical decision and its trade-offs?";
+    return "Go one level deeper — what did you actually decide and why not the other option?";
   }
   if (scores.overall < 6) {
-    return "Thanks. Can you give a more specific example with numbers or a concrete outcome?";
+    return "Gimme something more specific — a number, a name of the mess, an ending.";
   }
-  return "What was the hardest part of that experience, and how did you navigate it?";
+  return "What was the hardest part, for real?";
 }
 
 export function generateLocalFeedback(
@@ -618,10 +618,10 @@ export function generateLocalFeedback(
     followUpQuestion: followUp(scores, m),
     summary:
       overall >= 8
-        ? "Excellent response — polished, relevant, and interview-ready."
+        ? "That was actually good. You could say this in a real room."
         : overall >= 6
-          ? "Solid foundation with clear room to sharpen structure and specificity."
-          : "Needs more structure and concrete detail to compete at top companies.",
+          ? "Not terrible — fix the structure and specifics and you're cooking."
+          : "Kinda mid. Needs a real story, your actions, and an ending with proof.",
   };
 }
 
@@ -671,34 +671,34 @@ export function generateLocalResumeAnalysis(
 
   if (/react|typescript|javascript|node|python|java|golang|rust|kotlin|swift/.test(lower)) {
     strengths.push(
-      "Hands-on software engineering skills across modern stacks."
+      "You actually build software — not just \"passionate about tech\" fluff."
     );
     talkingPoints.push(
-      "Prepare a 60-second story about a system you designed or shipped end-to-end."
+      "Have a 60-second story about something you shipped end-to-end. Practice it out loud."
     );
     suggestedRoles.push("Software Engineer", "Full Stack Engineer");
     sampleAnswers.push({
       prompt: "Tell me about a technical project you're proud of.",
       answer:
-        "Situation: We needed a reliable feature under tight latency constraints. Task: I owned design and delivery of the core path. Action: I defined the API contract, added caching where safe, and instrumented metrics. Result: We shipped on time and improved p95 latency by a measurable margin — I can walk through the trade-offs if useful.",
+        "Situation: We needed a feature that couldn't be slow or we'd lose users. Task: I owned the core path. Action: Locked the API, cached the safe bits, added metrics so we weren't guessing. Result: Shipped on time and p95 got better by a real number — I can nerd out on the trade-offs if you want.",
     });
   }
   if (/product|roadmap|stakeholder|agile|scrum|priorit|backlog/.test(lower)) {
-    strengths.push("Product sense and stakeholder alignment experience.");
+    strengths.push("You get product trade-offs and talking to humans about priorities.");
     talkingPoints.push(
-      "Use a RICE/MoSCoW example when discussing prioritization."
+      "When they ask prioritization, tell a real \"I said no to the loud request\" story."
     );
     suggestedRoles.push("Product Manager");
     sampleAnswers.push({
       prompt: "How do you prioritize when everything is urgent?",
       answer:
-        "I clarify the outcome metric, estimate impact vs effort, and force-rank with stakeholders. In one cycle I deferred a popular request that didn't move retention, freeing capacity for an onboarding fix that lifted activation — I document the decision so the team stays aligned.",
+        "I pick the metric that matters, rough impact vs effort, then force-rank with people in the room. One cycle I killed a popular request that didn't move retention so we could fix onboarding — activation went up. I write the decision down so nobody gaslights the timeline later.",
     });
   }
   if (/design|figma|ux|user research|wireframe|prototype|usability/.test(lower)) {
-    strengths.push("Design craft and user-centered process.");
+    strengths.push("Design brain + you care what users actually do.");
     talkingPoints.push(
-      "Walk through one case study: problem → research → solution → impact."
+      "One case study: problem → research → what you made → did it help."
     );
     suggestedRoles.push("UX Designer", "Product Designer");
   }
@@ -707,42 +707,41 @@ export function generateLocalResumeAnalysis(
       lower
     )
   ) {
-    strengths.push("Analytical and data-driven decision making.");
+    strengths.push("You can turn data into decisions, not just pretty charts.");
     talkingPoints.push(
-      "Quantify one insight that changed a business decision."
+      "Have one insight that actually changed what the business did."
     );
     suggestedRoles.push("Data Analyst", "Data Scientist");
   }
   if (/sales|pipeline|quota|crm|revenue|customer success|account/.test(lower)) {
-    strengths.push("Revenue ownership and customer-facing impact.");
+    strengths.push("You touch money and customers — that matters.");
     talkingPoints.push(
-      "Prepare a win story and a loss-learn story with clear metrics."
+      "One win story + one loss you learned from. Numbers or it didn't happen."
     );
     suggestedRoles.push("Account Executive", "Customer Success Manager");
   }
   if (/lead|manage|mentor|team of|hired|performance review|1:1|one-on-one/.test(lower)) {
     strengths.push(
-      "Leadership signals — mentoring, ownership, and team outcomes."
+      "Leadership signals show up — mentoring, owning stuff, team results."
     );
     talkingPoints.push(
-      "Have a leadership story ready: hard feedback, hiring, or delivery under pressure."
+      "Ready a story: hard feedback, hiring, or shipping when everything was on fire."
     );
   }
 
-  // Weaknesses / gaps (constructive, interview-prep oriented)
   if (!/\d+%|\d+x|\$\d|increased|reduced|grew by|saved/.test(lower)) {
     weaknesses.push(
-      "Impact is under-quantified — add metrics (% lift, $ impact, time saved) to key bullets."
+      "Not enough numbers. Sprinkle % / $ / time saved on the big bullets."
     );
   }
   if (!/led|owned|drove|spearheaded|mentored/.test(lower)) {
     weaknesses.push(
-      "Ownership language is light — rewrite bullets to emphasize what *you* decided and delivered."
+      "Too much \"helped with.\" Say what YOU decided and shipped."
     );
   }
   if (text.length < 800) {
     weaknesses.push(
-      "Resume text is thin after extraction — flesh out 2–3 signature projects with STAR-ready detail."
+      "Resume feels thin. Beef up 2–3 projects with real detail you can talk about."
     );
   }
   if (
@@ -752,21 +751,21 @@ export function generateLocalResumeAnalysis(
     /engineer|developer|software/.test(lower)
   ) {
     weaknesses.push(
-      "Operational/infra keywords are sparse — mention reliability, CI/CD, or security if accurate."
+      "Barely any ops/infra words. Mention CI/CD, reliability, or security if it's true."
     );
   }
   if (weaknesses.length === 0) {
     weaknesses.push(
-      "Tighten top-third of resume for scannability: role title match, 3 quantified wins, clear tools."
+      "Top of resume could be tighter: title match, 3 wins with numbers, tools they care about."
     );
   }
 
   if (strengths.length === 0) {
     strengths.push(
-      "Diverse experience that can be tailored to multiple role narratives."
+      "You've got range — we can spin this toward more than one kind of job."
     );
     talkingPoints.push(
-      "Pick 3 signature stories and map each to STAR with measurable results."
+      "Pick 3 signature stories and STAR them with real results."
     );
     suggestedRoles.push(
       "Software Engineer",
@@ -779,14 +778,14 @@ export function generateLocalResumeAnalysis(
     sampleAnswers.push({
       prompt: "Tell me about yourself.",
       answer:
-        "I'm a [role] focused on [domain]. Recently I [signature win with metric]. I'm excited about this role because [mission fit] and I want to bring [strength] to the team.",
+        "I'm a [role] who cares about [domain]. Lately I [win + number]. I want this job because [why it's not random] and I'd bring [thing you're good at].",
     });
   }
 
   sampleAnswers.push({
     prompt: "What's a challenge you overcame recently?",
     answer:
-      "Situation: Ambiguous requirements threatened a deadline. Task: I owned alignment and delivery. Action: I ran a short discovery spike, proposed two options with trade-offs, and shipped the MVP with monitoring. Result: We hit the date and reduced rework the following sprint.",
+      "Situation: Requirements were mush and the deadline was real. Task: I owned getting us aligned and shipping. Action: Tiny discovery spike, two options with trade-offs, MVP + monitoring. Result: We hit the date and the next sprint wasn't pure cleanup.",
   });
 
   const suggestedQuestions = [
@@ -816,26 +815,26 @@ export function generateLocalResumeAnalysis(
 
   const atsTips: string[] = [];
   if (ats < 70)
-    atsTips.push("Add 3–5 quantified bullets (%, $, time) near the top.");
+    atsTips.push("Stick 3–5 bullets with real numbers near the top. Bots and humans both notice.");
   if (!/skills|technologies|tools/.test(lower))
-    atsTips.push("Include a clear Skills section with role-matched keywords.");
+    atsTips.push("Add a Skills section with words from the job post. Not a novel — a list.");
   if (weaknesses.length)
-    atsTips.push("Address the gaps listed under improvements before applying.");
+    atsTips.push("Fix the gaps above before you spray-apply. Trust.");
   if (atsTips.length === 0)
-    atsTips.push("Tailor the top third of your resume to each job description.");
+    atsTips.push("Rewrite the top third for each job. Lazy resumes get lazy replies.");
 
   const experienceHighlights = extractHighlights(text);
   const uniq = (arr: string[]) => Array.from(new Set(arr));
 
   return {
-    summary: `Based on "${fileName}", your background shows transferable strengths that map well to interview storytelling. Lean into quantified wins and clear ownership; use the talking points below to convert resume bullets into spoken STAR answers.`,
+    summary: `Ok so for "${fileName}" — you've got stuff worth talking about. Lean on numbers and what YOU owned. Talking points below = how to say it out loud without sounding like a robot.`,
     strengths: uniq(strengths).slice(0, 5),
     weaknesses: uniq(weaknesses).slice(0, 5),
     experienceHighlights:
       experienceHighlights.length > 0
         ? experienceHighlights
         : [
-            "Add 3–5 accomplishment bullets with action + metric so highlights can be extracted next time.",
+            "Add 3–5 bullets with action + number so we can actually pull highlights next time.",
           ],
     talkingPoints: uniq(talkingPoints).slice(0, 6),
     sampleAnswers: sampleAnswers.slice(0, 4),

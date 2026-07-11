@@ -131,17 +131,17 @@ export function RoleSearch({
         >
           {matches.length === 0 ? (
             <li className="px-3 py-2.5 text-sm text-muted-foreground">
-              No catalog match.{" "}
+              Nothing in the list matched.{" "}
               {query.trim() ? (
                 <button
                   type="button"
                   className="font-medium text-indigo-600 underline dark:text-indigo-300"
                   onClick={applyCustomRole}
                 >
-                  Use “{query.trim()}” as custom role
+                  Use “{query.trim()}” as a custom role
                 </button>
               ) : (
-                "Start typing to search."
+                "Start typing, fr."
               )}
             </li>
           ) : (
@@ -167,7 +167,7 @@ export function RoleSearch({
                   className="w-full px-3 py-2.5 text-left text-sm text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-300"
                   onClick={applyCustomRole}
                 >
-                  Use custom role: “{query.trim()}”
+                  Custom role: “{query.trim()}”
                 </button>
               </li>
             )}
@@ -176,7 +176,7 @@ export function RoleSearch({
 
       {value && (
         <p className="mt-1.5 text-xs text-muted-foreground">
-          Active:{" "}
+          Locked in:{" "}
           <span className="font-semibold text-foreground">{value}</span>
           {!JOB_ROLES.some((r) => r.title === value) && (
             <span className="text-muted-foreground"> (custom)</span>

@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
           <div>
             <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-300">
               <Brain className="h-3.5 w-3.5" />
-              Performance psychology
+              Your brain on interviews
             </p>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
               <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">
@@ -106,8 +106,8 @@ export default function AnalyticsPage() {
               </span>
             </h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">
-              Scores, habits, confidence calibration, and coaching grounded in
-              how people actually learn under evaluation stress.
+              Scores, habits, confidence checks, and coaching that actually
+              matches how people learn when it&apos;s stressful, ngl.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -185,11 +185,11 @@ export default function AnalyticsPage() {
           <Card className="mt-8">
             <CardContent className="flex flex-col items-center py-16 text-center">
               <Brain className="mb-3 h-12 w-12 text-indigo-500/50" />
-              <h3 className="text-lg font-semibold">No psych profile yet</h3>
+              <h3 className="text-lg font-semibold">No profile yet, fr</h3>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Complete mock interviews to unlock readiness, confidence
-                calibration, spacing analysis, narrative maturity, and
-                personalized coaching.
+                Do some mock interviews and we&apos;ll unlock readiness,
+                confidence checks, spacing vibes, story skill, and coaching that
+                actually fits you.
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <Button asChild variant="gradient">
@@ -209,7 +209,7 @@ export default function AnalyticsPage() {
                 {[
                   {
                     t: "Self-efficacy",
-                    d: "Scores rise with mastery experiences — start winnable, then stretch.",
+                    d: "Scores climb when you win small first — start easy, then stretch.",
                   },
                   {
                     t: "Deliberate practice",
@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
                   },
                   {
                     t: "Spacing",
-                    d: "2–4 sessions/week beats cramming the night before.",
+                    d: "2–4 sessions/week beats cramming the night before. no cap.",
                   },
                 ].map((x) => (
                   <div
@@ -240,10 +240,10 @@ export default function AnalyticsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <MessageSquare className="h-5 w-5 text-violet-500" />
-                  Coaching narrative
+                  Coach&apos;s read on you
                 </CardTitle>
                 <CardDescription>
-                  Integrated read across scores, habits, and self-presentation
+                  Scores, habits, and how you show up — the full picture
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -274,7 +274,7 @@ export default function AnalyticsPage() {
               />
               <MetricTile
                 icon={Scale}
-                label="Confidence calibration"
+                label="Confidence check"
                 value={
                   psych.calibration.label === "insufficient"
                     ? "—"
@@ -304,7 +304,7 @@ export default function AnalyticsPage() {
               {/* Radar */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Competency map</CardTitle>
+                  <CardTitle className="text-lg">Skill map</CardTitle>
                   <CardDescription>
                     Clarity · Relevance · Structure · Technical · Confidence
                   </CardDescription>
@@ -342,10 +342,10 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Brain className="h-5 w-5 text-indigo-500" />
-                    Dimension psychology
+                    Dimension breakdown
                   </CardTitle>
                   <CardDescription>
-                    What each score means under evaluation stress
+                    What each score actually means when it&apos;s stressful
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="max-h-72 space-y-4 overflow-y-auto pr-1">
@@ -383,7 +383,7 @@ export default function AnalyticsPage() {
               {/* Score over time */}
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle className="text-lg">Mastery trajectory</CardTitle>
+                  <CardTitle className="text-lg">Score over time</CardTitle>
                   <CardDescription>
                     {psych.trajectory.insight}
                   </CardDescription>
@@ -447,7 +447,7 @@ export default function AnalyticsPage() {
                     Confidence vs substance
                   </CardTitle>
                   <CardDescription>
-                    Self-presentation calibration
+                    Are you overselling or underselling yourself?
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -485,7 +485,7 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <HeartPulse className="h-5 w-5 text-rose-400" />
-                    Habits & growth mindset
+                    Habits & bounce-back
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
@@ -527,10 +527,10 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Activity className="h-5 w-5 text-amber-500" />
-                    Arousal & the clock
+                    You vs the clock
                   </CardTitle>
                   <CardDescription>
-                    Yerkes–Dodson: performance vs evaluation stress
+                    How you perform when the timer&apos;s staring at you
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -561,10 +561,10 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <BookOpen className="h-5 w-5 text-indigo-500" />
-                    Narrative maturity
+                    Story skill
                   </CardTitle>
                   <CardDescription>
-                    Structure score · STAR / causal story skill
+                    Structure score · STAR / how well your stories land
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -595,7 +595,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {psych.modeProfiles.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No modes yet.</p>
+                    <p className="text-sm text-muted-foreground">No modes yet — go try one.</p>
                   ) : (
                     psych.modeProfiles.map((m) => (
                       <Link
@@ -625,7 +625,7 @@ export default function AnalyticsPage() {
                   <CardHeader>
                     <CardTitle className="text-lg">Weekly practice volume</CardTitle>
                     <CardDescription>
-                      Habit formation loves consistency more than intensity
+                      Showing up often beats going hard once. consistency &gt; intensity
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="h-64">
@@ -676,16 +676,16 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Shield className="h-5 w-5 text-emerald-500" />
-                    Signature strengths
+                    What you&apos;re good at
                   </CardTitle>
                   <CardDescription>
-                    Recurring themes from feedback (positive psychology)
+                    Themes that keep showing up in feedback
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {psych.topStrengths.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Strengths appear as you collect feedback.
+                      Strengths show up once you collect some feedback.
                     </p>
                   ) : (
                     <ul className="space-y-2">
@@ -715,13 +715,13 @@ export default function AnalyticsPage() {
                     Growth edges
                   </CardTitle>
                   <CardDescription>
-                    Recurring improvement themes — deliberate practice targets
+                    Recurring fix-me themes — your deliberate practice targets
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {psych.topImprovements.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Improvement themes appear after scored answers.
+                      Improvement themes show up after scored answers.
                     </p>
                   ) : (
                     <ul className="space-y-2">
@@ -748,11 +748,11 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Target className="h-5 w-5 text-indigo-500" />
-                    Next challenges (zone of proximal development)
+                    Next challenges (stretch zone)
                   </CardTitle>
                   <CardDescription>
-                    Stretch tasks just beyond current mastery — high learning
-                    yield
+                    Tasks just past where you are now — high learning, not
+                    impossible
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -785,7 +785,7 @@ export default function AnalyticsPage() {
                         {r.psychBasis}
                       </p>
                       <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-primary">
-                        Open
+                        Open it
                         <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                       </p>
                     </Link>
@@ -798,34 +798,34 @@ export default function AnalyticsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Lightbulb className="h-5 w-5 text-amber-400" />
-                    Science behind this dashboard
+                    Why this dashboard even exists
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
                   {[
                     {
                       t: "Self-efficacy (Bandura)",
-                      d: "Belief in capability grows from mastery, models, persuasion, and body state — we track wins and recovery.",
+                      d: "You believe you can do it when you rack up wins — we track those and bounce-backs.",
                     },
                     {
                       t: "Deliberate practice (Ericsson)",
-                      d: "Goals, feedback, and focused reps beat mindless volume — we score practice quality.",
+                      d: "Goals + feedback + focused reps beat mindless volume. we score practice quality.",
                     },
                     {
                       t: "Spacing (Ebbinghaus)",
-                      d: "Distributed practice beats cramming for durable skill — we inspect your cadence.",
+                      d: "Spread-out practice sticks more than cramming — we check your cadence.",
                     },
                     {
                       t: "Growth mindset (Dweck)",
-                      d: "Bounce-back after dips signals adaptive learning beliefs — we measure recovery.",
+                      d: "Bounce-back after dips = adaptive learning. we measure recovery.",
                     },
                     {
                       t: "Narrative / STAR",
-                      d: "Structured stories reduce interviewer cognitive load — structure is a first-class metric.",
+                      d: "Structured stories are easier for interviewers to follow. structure is a real metric.",
                     },
                     {
                       t: "Yerkes–Dodson",
-                      d: "Too little or too much arousal hurts performance — timed vs untimed reveals your curve.",
+                      d: "Too chill or too stressed tanks performance — timed vs untimed shows your curve.",
                     },
                   ].map((x) => (
                     <div

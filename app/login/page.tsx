@@ -74,7 +74,7 @@ function LoginInner() {
   const onPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!configured) {
-      toast.error("Cloud login isn’t configured on this deployment.");
+      toast.error("Cloud login isn’t set up on this deploy, ngl.");
       return;
     }
     setLoading("password");
@@ -87,12 +87,12 @@ function LoginInner() {
         }
         if (res.needsConfirm) {
           toast.success(
-            "Account created — check your email to confirm, then sign in."
+            "Account’s ready — check your email, then log in."
           );
           setMode("signin");
           return;
         }
-        toast.success("Account created — you’re signed in");
+        toast.success("You’re in — account created");
         router.replace("/dashboard");
         return;
       }
@@ -102,7 +102,7 @@ function LoginInner() {
         toast.error(res.error);
         return;
       }
-      toast.success("Signed in");
+      toast.success("You’re logged in");
       router.replace("/dashboard");
     } finally {
       setLoading(null);
@@ -119,7 +119,7 @@ function LoginInner() {
       return;
     }
     setMagicSent(true);
-    toast.success("Check your email for the sign-in link");
+    toast.success("Check your email for the login link");
   };
 
   const onGitHub = async () => {
@@ -150,7 +150,7 @@ function LoginInner() {
             InterviewForge
           </Link>
           <p className="mt-3 text-sm text-muted-foreground">
-            Sign in to your account
+            Log in to your account
           </p>
         </div>
 
@@ -160,7 +160,7 @@ function LoginInner() {
               {mode === "signup" ? (
                 <>
                   <UserPlus className="h-6 w-6 text-indigo-500" />
-                  Create account
+                  Make an account
                 </>
               ) : mode === "magic" ? (
                 <>
@@ -170,23 +170,23 @@ function LoginInner() {
               ) : (
                 <>
                   <LogIn className="h-6 w-6 text-indigo-500" />
-                  Sign in
+                  Log in
                 </>
               )}
             </CardTitle>
             <CardDescription>
               {mode === "signup"
-                ? "Create an account with email and password. Your practice progress can sync privately."
+                ? "Email + password. Your practice can sync privately — no weird public stuff."
                 : mode === "magic"
-                  ? "We’ll email you a one-tap link — no password needed."
-                  : "Use your email and password. Guest progress on this device can merge after you sign in."}
+                  ? "We’ll email you a one-tap link. No password, bet."
+                  : "Email + password. Guest progress on this device can merge after you log in."}
             </CardDescription>
 
             <div className="flex rounded-xl border border-border/70 bg-muted/40 p-1">
               {(
                 [
-                  { id: "signin" as const, label: "Sign in" },
-                  { id: "signup" as const, label: "Create account" },
+                  { id: "signin" as const, label: "Log in" },
+                  { id: "signup" as const, label: "Sign up" },
                   { id: "magic" as const, label: "Magic link" },
                 ] as const
               ).map((tab) => (
@@ -215,22 +215,21 @@ function LoginInner() {
               <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
                 {errorMessage
                   ? decodeURIComponent(errorMessage)
-                  : "Sign-in failed. Try email + password or a magic link."}
+                  : "Login flopped. Try email + password or a magic link."}
               </p>
             )}
 
             {willMigrate && (
               <p className="flex gap-2 rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-2 text-xs text-muted-foreground">
                 <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
-                Local practice data on this device will merge into your account
-                after sign-in (never shared with other users).
+                Local practice on this device merges into your account after
+                login (never shared with random people).
               </p>
             )}
 
             {!configured && (
               <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                Cloud login isn’t configured on this deployment (missing Supabase
-                env vars).
+                Cloud login isn’t set up here (missing Supabase env vars).
               </p>
             )}
 
@@ -314,9 +313,9 @@ function LoginInner() {
                   {loading === "password" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : mode === "signup" ? (
-                    "Create account"
+                    "Make account"
                   ) : (
-                    "Sign in"
+                    "Log in"
                   )}
                 </Button>
               </form>
@@ -348,12 +347,12 @@ function LoginInner() {
                   ) : magicSent ? (
                     "Link sent — check your inbox"
                   ) : (
-                    "Email me a sign-in link"
+                    "Email me a login link"
                   )}
                 </Button>
                 {magicSent && (
                   <p className="text-xs text-muted-foreground">
-                    Open the link on this device. Check spam if you don’t see it
+                    Open the link on this device. Spam folder if it doesn’t show
                     in a minute.
                   </p>
                 )}
@@ -386,35 +385,35 @@ function LoginInner() {
             <p className="text-center text-xs text-muted-foreground">
               {mode === "signin" ? (
                 <>
-                  No account?{" "}
+                  No account yet?{" "}
                   <button
                     type="button"
                     className="font-medium text-indigo-600 hover:underline dark:text-indigo-300"
                     onClick={() => setMode("signup")}
                   >
-                    Create one
+                    Make one
                   </button>
                 </>
               ) : mode === "signup" ? (
                 <>
-                  Already have an account?{" "}
+                  Already have one?{" "}
                   <button
                     type="button"
                     className="font-medium text-indigo-600 hover:underline dark:text-indigo-300"
                     onClick={() => setMode("signin")}
                   >
-                    Sign in
+                    Log in
                   </button>
                 </>
               ) : (
                 <>
-                  Prefer a password?{" "}
+                  Want a password instead?{" "}
                   <button
                     type="button"
                     className="font-medium text-indigo-600 hover:underline dark:text-indigo-300"
                     onClick={() => setMode("signin")}
                   >
-                    Sign in with email
+                    Log in with email
                   </button>
                 </>
               )}

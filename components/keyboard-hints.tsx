@@ -84,6 +84,7 @@ export function KeyboardHints() {
             variant="ghost"
             className="h-8 w-8"
             onClick={() => setOpen(false)}
+            aria-label="Close shortcuts"
           >
             <X className="h-4 w-4" />
           </Button>

@@ -15,13 +15,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { useApp } from "@/components/providers";
 import { cn } from "@/lib/utils";
 
-/**
- * Compact signed-in chip + menu (avoids overlapping badge/toast clutter).
- */
+/** Signed-in chip + little menu. */
 export function UserMenu() {
   const { user, isCloudUser, signOut, cloudOnline } = useApp();
   const router = useRouter();
@@ -43,11 +40,11 @@ export function UserMenu() {
     setOpen(false);
     try {
       await signOut();
-      toast.success("Signed out. Progress stays on this device.");
+      toast.success("You're out. Your practice still lives on this device.");
       router.push("/dashboard");
       router.refresh();
     } catch {
-      toast.error("Sign out failed — try again or clear site data.");
+      toast.error("Logout flopped — try again or clear site data, idk.");
     } finally {
       setSigningOut(false);
     }
@@ -80,7 +77,7 @@ export function UserMenu() {
               "hidden h-3.5 w-3.5 shrink-0 sm:block",
               cloudOnline ? "text-emerald-500" : "text-amber-500"
             )}
-            aria-label={cloudOnline ? "Synced" : "Cloud offline"}
+            aria-label={cloudOnline ? "Synced" : "Cloud is taking a nap"}
           />
         )}
       </button>
@@ -100,13 +97,13 @@ export function UserMenu() {
             <div className="border-b border-border/60 px-3 py-2">
               <p className="truncate text-sm font-medium">{user.name}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {isCloudUser ? user.email : "Guest on this device"}
+                {isCloudUser ? user.email : "Guest on this phone/laptop"}
               </p>
               {isCloudUser && (
                 <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
                   {cloudOnline
-                    ? "Signed in — progress syncs"
-                    : "Signed in — using local cache"}
+                    ? "Logged in — stuff can sync"
+                    : "Logged in — using what's cached here"}
                 </p>
               )}
             </div>
@@ -117,7 +114,7 @@ export function UserMenu() {
               onClick={() => setOpen(false)}
             >
               <LayoutDashboard className="h-4 w-4" />
-              Dashboard
+              Home base
             </Link>
             <Link
               href="/interview"
@@ -126,7 +123,7 @@ export function UserMenu() {
               onClick={() => setOpen(false)}
             >
               <Mic className="h-4 w-4" />
-              Interview hub
+              Practice hub
             </Link>
             <Link
               href="/history"
@@ -135,7 +132,7 @@ export function UserMenu() {
               onClick={() => setOpen(false)}
             >
               <History className="h-4 w-4" />
-              History
+              Past runs
             </Link>
             <Link
               href="/settings"
@@ -154,7 +151,7 @@ export function UserMenu() {
                 onClick={() => setOpen(false)}
               >
                 <UserIcon className="h-4 w-4" />
-                Sign in to sync
+                Log in to sync
               </Link>
             )}
             {isCloudUser && (
@@ -170,7 +167,7 @@ export function UserMenu() {
                 ) : (
                   <LogOut className="h-4 w-4" />
                 )}
-                Sign out
+                Log out
               </button>
             )}
           </div>

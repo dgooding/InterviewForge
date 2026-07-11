@@ -24,23 +24,23 @@ export function SaveProgressBanner() {
         <p className="flex items-start gap-2 text-sm text-foreground sm:items-center">
           <Cloud className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" />
           <span>
-            <span className="font-medium">Progress stays on this device.</span>{" "}
+            <span className="font-medium">Progress is stuck on this device.</span>{" "}
             <span className="text-muted-foreground">
-              Sign in (email magic link works now) to sync across devices —
-              nothing is uploaded until you choose to.
+              Log in (email magic link works) to sync everywhere — nothing
+              uploads until you say so.
             </span>
           </span>
         </p>
         <div className="flex items-center gap-2">
           <Button asChild size="sm" variant="gradient">
-            <Link href="/login">Save across devices</Link>
+            <Link href="/login">Sync to other devices</Link>
           </Button>
           <Button
             size="icon"
             variant="ghost"
             className="h-8 w-8"
             onClick={dismissSyncBanner}
-            aria-label="Dismiss"
+            aria-label="Dismiss banner"
           >
             <X className="h-4 w-4" />
           </Button>

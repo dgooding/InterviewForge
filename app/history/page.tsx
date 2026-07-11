@@ -91,10 +91,10 @@ export default function HistoryPage() {
     setExporting(session.id);
     try {
       await exportSessionReport(session, user);
-      toast.success("PDF report downloaded");
+      toast.success("PDF downloaded — bet");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to export PDF");
+      toast.error("PDF export flopped, ngl");
     } finally {
       setExporting(null);
     }
@@ -110,7 +110,8 @@ export default function HistoryPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">History & Reports</h1>
         <p className="mt-1 text-muted-foreground">
-          Search and filter past interviews. Export PDF coaching reports.
+          Search past interviews, dig into scores, export a PDF when you want
+          receipts.
         </p>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -160,7 +161,7 @@ export default function HistoryPage() {
           <Card className="mt-8">
             <CardContent className="flex flex-col items-center py-16 text-center text-muted-foreground">
               <History className="mb-3 h-10 w-10 opacity-40" />
-              <p>No sessions match your filters.</p>
+              <p>No sessions match that filter. empty vibes.</p>
               <Button asChild variant="link" className="mt-2">
                 <Link href="/interview">
                   <Mic className="h-4 w-4" />
@@ -242,7 +243,7 @@ export default function HistoryPage() {
                             }
                           >
                             <Play className="h-3.5 w-3.5" />
-                            Practice this mode again
+                            Run this mode again
                           </Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">

@@ -22,9 +22,9 @@ export default function InterviewModePage() {
   if (!isInterviewMode(modeParam)) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold">Unknown interview mode</h1>
+        <h1 className="text-xl font-semibold">Uhh that mode isn&apos;t real</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Choose a practice mode from the simulator hub.
+          ngl idk what mode that was — grab one from the list.
         </p>
         <ul className="mt-6 space-y-2 text-sm">
           {INTERVIEW_MODES.map((m) => (
@@ -39,7 +39,7 @@ export default function InterviewModePage() {
           ))}
         </ul>
         <Button asChild className="mt-6" variant="gradient">
-          <Link href="/interview">Interview hub</Link>
+          <Link href="/interview">Back to the hub</Link>
         </Button>
       </div>
     );

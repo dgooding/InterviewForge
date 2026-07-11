@@ -13,43 +13,43 @@ import { Button } from "@/components/ui/button";
 const FAQS = [
   {
     q: "Do I need an account?",
-    a: "No. Guest mode works fully. Progress stays in your browser until you optionally sign in to sync across devices.",
+    a: "Nope. Guest mode is fully usable. Progress stays in your browser until you optionally log in to sync across devices.",
     href: "/login",
-    cta: "Sign in options",
+    cta: "Log in options",
   },
   {
     q: "Is my interview data private?",
-    a: "Yes. Anonymous progress never leaves your device. Cloud data is isolated per user with row-level security. Export or delete everything in Settings.",
+    a: "Yeah. Anonymous progress never leaves your device. Cloud data is isolated per user with row-level security. Export or delete everything in Settings.",
     href: "/privacy",
     cta: "Read privacy",
   },
   {
     q: "How does AI feedback work without an API key?",
-    a: "A local coaching engine scores clarity, STAR structure, relevance, technical depth, and confidence. With XAI_API_KEY configured, Grok can enhance feedback.",
+    a: "A local coach scores clarity, STAR structure, relevance, technical depth, and confidence. With XAI_API_KEY set, Grok can make feedback less mid.",
     href: "/interview",
     cta: "Try a mock interview",
   },
   {
     q: "Can I practice with voice?",
-    a: "Yes on supported browsers (Chrome/Edge). Use Record answer during a mock interview. You can always type instead.",
+    a: "Yep on Chrome/Edge. Hit Record answer in a mock. Typing always works if you don’t want mic drama.",
     href: "/interview/behavioral",
     cta: "Open behavioral practice",
   },
   {
     q: "What is ATS score on resume analysis?",
-    a: "A transparent local heuristic estimating how keyword- and impact-friendly your resume looks — not a guarantee from any employer system.",
+    a: "A transparent local vibe-check on how keyword- and impact-friendly your resume looks — not a guarantee from any employer system, tbh.",
     href: "/resume",
     cta: "Analyze resume",
   },
   {
     q: "Where is the question bank?",
-    a: "Browse 500+ prompts, filter by category and difficulty, bookmark favorites, and practice any question in the simulator.",
+    a: "Browse 500+ prompts, filter by category and difficulty, bookmark favorites, and grind any question in the simulator.",
     href: "/questions",
     cta: "Open question bank",
   },
   {
     q: "Keyboard shortcuts?",
-    a: "Press ? anywhere (outside text fields). Use g then d/i/r/h/s/a/q for Dashboard, Interview, Resume, History, Settings, Analytics, or Questions.",
+    a: "Press ? anywhere (not in text fields). Use g then d/i/r/h/s/a/q for Dashboard, Interview, Resume, History, Settings, Analytics, or Questions.",
     href: "/dashboard",
     cta: "Go to dashboard",
   },
@@ -61,7 +61,7 @@ export default function FaqPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">FAQ</h1>
         <p className="mt-1 text-muted-foreground">
-          Quick answers about InterviewForge.
+          Quick answers about InterviewForge. No corporate waffle.
         </p>
         <div className="mt-8 space-y-4">
           {FAQS.map((f) => (
@@ -80,7 +80,7 @@ export default function FaqPage() {
         </div>
         <div className="mt-8 flex flex-wrap gap-2">
           <Button asChild variant="gradient">
-            <Link href="/interview">Start practice</Link>
+            <Link href="/interview">Start practicing</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/settings">Settings & privacy</Link>

@@ -104,16 +104,16 @@ export default function InterviewHubPage() {
           <div>
             <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-300">
               <Mic className="h-3.5 w-3.5" />
-              Live practice
+              Live reps
             </p>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
               <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">
-                Mock Interview Simulator
+                Mock Interview Sim
               </span>
             </h1>
             <p className="mt-2 max-w-xl text-muted-foreground">
-              Pick a role and mode, then answer timed questions with text or
-              voice. Progress saves automatically on this device.
+              Pick a role + mode, then yap your answers with text or voice.
+              Progress lowkey saves on this device, ngl.
             </p>
           </div>
           <Button asChild variant="outline" size="sm">
@@ -124,9 +124,9 @@ export default function InterviewHubPage() {
         {/* Role selection */}
         <section className="mt-8 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium">Target role</p>
+            <p className="text-sm font-medium">Who you&apos;re going for</p>
             <p className="text-xs text-muted-foreground">
-              Active:{" "}
+              Locked in:{" "}
               <span className="font-semibold text-foreground">{activeRole}</span>
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function InterviewHubPage() {
                   )}
                   onClick={() => {
                     setSelectedRole(r.title);
-                    toast.success(`Role set: ${r.title}`, {
+                    toast.success(`Bet — role set: ${r.title}`, {
                       id: "role-set",
                       duration: 1800,
                     });
@@ -166,7 +166,7 @@ export default function InterviewHubPage() {
             value={activeRole}
             onSelect={(title) => {
               setSelectedRole(title);
-              toast.success(`Role set: ${title}`, {
+              toast.success(`Bet — role set: ${title}`, {
                 id: "role-set",
                 duration: 1800,
               });
@@ -178,7 +178,7 @@ export default function InterviewHubPage() {
         {/* Mode cards → dedicated routes */}
         <section className="mt-10">
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            Choose a practice mode
+            Pick your vibe
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {INTERVIEW_MODES.map((m, i) => {
@@ -210,7 +210,7 @@ export default function InterviewHubPage() {
                       <CardContent className="flex items-center justify-between">
                         <Badge variant="secondary">{m.count} questions</Badge>
                         <span className="text-xs font-medium text-indigo-600 dark:text-indigo-300">
-                          Open session →
+                          Let&apos;s go →
                         </span>
                       </CardContent>
                     </Card>
@@ -222,9 +222,9 @@ export default function InterviewHubPage() {
         </section>
 
         <section className="mt-10 grid gap-3 sm:grid-cols-3">
-          <QuickLink href="/questions" label="Question bank" desc="500+ prompts" />
+          <QuickLink href="/questions" label="Question bank" desc="500+ prompts, fr" />
           <QuickLink href="/history" label="History" desc="Past sessions" />
-          <QuickLink href="/analytics" label="Analytics" desc="Scores & trends" />
+          <QuickLink href="/analytics" label="Analytics" desc="Scores & vibes" />
         </section>
       </motion.div>
     </div>

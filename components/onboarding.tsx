@@ -10,23 +10,23 @@ import { useApp } from "@/components/providers";
 const STEPS = [
   {
     icon: Mic,
-    title: "Practice with real mock interviews",
-    body: "Timed or untimed rounds, voice or text, with instant coaching feedback.",
+    title: "Stop bombing interviews",
+    body: "Timed or chill rounds, voice or text, with instant coaching so you know what was mid.",
   },
   {
     icon: FileText,
     title: "Turn your resume into talking points",
-    body: "Upload a PDF for strengths, ATS tips, and sample answers you can practice.",
+    body: "Upload a PDF — strengths, ATS tips, and sample answers you can actually practice.",
   },
   {
     icon: BarChart3,
-    title: "Track progress over time",
-    body: "Scores, streaks, and history stay on this device by default.",
+    title: "See if you're getting better",
+    body: "Scores, streaks, and history stay on this device by default. No account required.",
   },
   {
     icon: Cloud,
     title: "Optional cloud sync",
-    body: "Sign in with Google only when you want the same progress on another device.",
+    body: "Log in with Google only when you want the same progress on another device. Totally optional.",
   },
 ];
 
@@ -114,7 +114,7 @@ export function OnboardingModal() {
 
             <div className="mt-6 flex flex-wrap gap-2">
               <Button variant="gradient" onClick={next} className="flex-1">
-                {step >= STEPS.length - 1 ? "Get started" : "Next"}
+                {step >= STEPS.length - 1 ? "Let's go" : "Next"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               {step >= STEPS.length - 1 && (
@@ -129,9 +129,9 @@ export function OnboardingModal() {
               )}
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Tips: press{" "}
-              <kbd className="rounded border border-border px-1">?</kbd> for
-              keyboard shortcuts later
+              Tip: hit{" "}
+              <kbd className="rounded border border-border px-1">?</kbd> later
+              for keyboard shortcuts
             </p>
           </motion.div>
         </motion.div>
