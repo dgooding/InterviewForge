@@ -4,7 +4,9 @@ export type InterviewMode =
   | "behavioral"
   | "technical"
   | "mixed"
-  | "company";
+  | "company"
+  | "system-design"
+  | "jd"; // job-description tailored
 
 export type QuestionCategory =
   | "behavioral"
@@ -92,11 +94,19 @@ export interface InterviewSession {
   role: string;
   mode: InterviewMode;
   companyStyle?: CompanyStyle;
+  /** When true, no countdown timer (drill mode) */
+  untimed?: boolean;
+  /** Optional job description used to tailor questions */
+  jobDescriptionExcerpt?: string;
   startedAt: string;
   completedAt?: string;
   answers: InterviewAnswer[];
   overallScore?: number;
-  status: "in_progress" | "completed" | "abandoned";
+  status: "in_progress" | "completed" | "abandoned" | "paused";
+  /** Snapshot of remaining question IDs when paused */
+  pausedQuestionIds?: string[];
+  pausedIndex?: number;
+  pausedSecondsLeft?: number;
 }
 
 export interface ResumeSampleAnswer {
@@ -115,6 +125,10 @@ export interface ResumeAnalysis {
   talkingPoints: string[];
   sampleAnswers: ResumeSampleAnswer[];
   suggestedRoles: string[];
+  suggestedQuestions?: string[];
+  /** 0–100 ATS-style heuristic score */
+  atsScore?: number;
+  atsTips?: string[];
   rawTextExcerpt?: string;
   source?: "local" | "xai" | "local-fallback" | "offline";
 }

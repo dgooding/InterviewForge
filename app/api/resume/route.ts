@@ -4,14 +4,21 @@ import {
   generateLocalResumeAnalysis,
   type LocalResumeResult,
 } from "@/lib/ai-feedback";
+import { clientKeyFromRequest, rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/resume
  * Body: { text, fileName }
- * Analyzes resume for strengths, weaknesses, highlights, talking points, sample answers.
- * Uses SpaceXAI/xAI when XAI_API_KEY is set; always has local fallback.
  */
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(`resume:${clientKeyFromRequest(req)}`, 20, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Retry in ${rl.retryAfterSec}s.` },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const text = String(body.text || "");
@@ -48,17 +55,19 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are an expert career coach and interviewer. Analyze the resume and return ONLY valid JSON:
+            content: `You are an expert career coach. Return ONLY valid JSON:
 {
   "summary": string,
   "strengths": string[3-5],
   "weaknesses": string[2-4],
   "experienceHighlights": string[3-6],
   "talkingPoints": string[3-6],
-  "sampleAnswers": [{"prompt": string, "answer": string}] (2-4 items),
-  "suggestedRoles": string[2-5]
-}
-Be specific, constructive, and interview-oriented. Weaknesses should be resume/prep gaps, not personal insults.`,
+  "sampleAnswers": [{"prompt": string, "answer": string}],
+  "suggestedRoles": string[2-5],
+  "suggestedQuestions": string[3-6],
+  "atsScore": number 0-100,
+  "atsTips": string[2-4]
+}`,
           },
           {
             role: "user",
@@ -98,6 +107,19 @@ Be specific, constructive, and interview-oriented. Weaknesses should be resume/p
           Array.isArray(parsed.suggestedRoles) && parsed.suggestedRoles.length
             ? parsed.suggestedRoles
             : local.suggestedRoles,
+        suggestedQuestions:
+          Array.isArray(parsed.suggestedQuestions) &&
+          parsed.suggestedQuestions.length
+            ? parsed.suggestedQuestions
+            : local.suggestedQuestions,
+        atsScore:
+          typeof parsed.atsScore === "number"
+            ? Math.max(0, Math.min(100, Math.round(parsed.atsScore)))
+            : local.atsScore,
+        atsTips:
+          Array.isArray(parsed.atsTips) && parsed.atsTips.length
+            ? parsed.atsTips
+            : local.atsTips,
       };
 
       return NextResponse.json({ analysis, source: "xai" });

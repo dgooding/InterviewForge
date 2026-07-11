@@ -1,15 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Download, History, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Download,
+  History,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Mic,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
 import { exportSessionReport } from "@/lib/pdf-report";
 import { formatDate, scoreBg, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -25,24 +34,45 @@ export default function HistoryPage() {
   const searchParams = useSearchParams();
   const focusId = searchParams.get("id");
 
-  const completed = useMemo(
-    () =>
-      sessions
-        .filter((s) => s.status === "completed")
-        .sort(
-          (a, b) =>
-            new Date(b.completedAt || b.startedAt).getTime() -
-            new Date(a.completedAt || a.startedAt).getTime()
-        ),
-    [sessions]
-  );
-
-  const [expanded, setExpanded] = useState<string | null>(
-    focusId || completed[0]?.id || null
-  );
+  const [search, setSearch] = useState("");
+  const [modeFilter, setModeFilter] = useState<string>("all");
+  const [expanded, setExpanded] = useState<string | null>(focusId);
   const [exporting, setExporting] = useState<string | null>(null);
 
+  const filtered = useMemo(() => {
+    let list = sessions
+      .filter((s) => s.status === "completed" || s.status === "paused")
+      .sort(
+        (a, b) =>
+          new Date(b.completedAt || b.startedAt).getTime() -
+          new Date(a.completedAt || a.startedAt).getTime()
+      );
+
+    if (modeFilter !== "all") {
+      list = list.filter((s) => s.mode === modeFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.role.toLowerCase().includes(q) ||
+          s.mode.toLowerCase().includes(q) ||
+          s.companyStyle?.toLowerCase().includes(q) ||
+          s.answers.some(
+            (a) =>
+              a.questionText.toLowerCase().includes(q) ||
+              a.answerText.toLowerCase().includes(q)
+          )
+      );
+    }
+    return list;
+  }, [sessions, modeFilter, search]);
+
   const handleExport = async (session: InterviewSession) => {
+    if (session.answers.length === 0) {
+      toast.error("Nothing to export yet for this session");
+      return;
+    }
     setExporting(session.id);
     try {
       await exportSessionReport(session, user);
@@ -55,24 +85,68 @@ export default function HistoryPage() {
     }
   };
 
+  const modes = useMemo(() => {
+    const set = new Set(sessions.map((s) => s.mode));
+    return Array.from(set);
+  }, [sessions]);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">History & Reports</h1>
         <p className="mt-1 text-muted-foreground">
-          Review past interviews and export PDF coaching reports.
+          Search and filter past interviews. Export PDF coaching reports.
         </p>
 
-        {completed.length === 0 ? (
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Search role, mode, or answer text…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search history"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant={modeFilter === "all" ? "default" : "outline"}
+              onClick={() => setModeFilter("all")}
+            >
+              All modes
+            </Button>
+            {modes.map((m) => (
+              <Button
+                key={m}
+                size="sm"
+                variant={modeFilter === m ? "default" : "outline"}
+                onClick={() => setModeFilter(m)}
+                className="capitalize"
+              >
+                {m}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
           <Card className="mt-8">
-            <CardContent className="flex flex-col items-center py-16 text-muted-foreground">
+            <CardContent className="flex flex-col items-center py-16 text-center text-muted-foreground">
               <History className="mb-3 h-10 w-10 opacity-40" />
-              <p>No completed sessions yet.</p>
+              <p>No sessions match your filters.</p>
+              <Button asChild variant="link" className="mt-2">
+                <Link href="/interview">
+                  <Mic className="h-4 w-4" />
+                  Start a mock interview
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="mt-8 space-y-4">
-            {completed.map((session) => {
+            {filtered.map((session) => {
               const open = expanded === session.id;
               return (
                 <Card
@@ -83,40 +157,39 @@ export default function HistoryPage() {
                 >
                   <CardHeader
                     className="cursor-pointer"
-                    onClick={() =>
-                      setExpanded(open ? null : session.id)
-                    }
+                    onClick={() => setExpanded(open ? null : session.id)}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <CardTitle className="text-lg">
-                          {session.role}
-                        </CardTitle>
+                        <CardTitle className="text-lg">{session.role}</CardTitle>
                         <CardDescription>
                           {session.mode}
                           {session.companyStyle
                             ? ` · ${session.companyStyle}`
-                            : ""}{" "}
-                          ·{" "}
+                            : ""}
+                          {session.untimed ? " · untimed" : ""} ·{" "}
                           {session.completedAt
                             ? formatDate(session.completedAt)
                             : formatDate(session.startedAt)}{" "}
                           · {session.answers.length} answers
+                          {session.status === "paused" ? " · paused" : ""}
                         </CardDescription>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={cn(scoreBg(session.overallScore ?? 0))}
-                        >
-                          {(session.overallScore ?? 0).toFixed(1)} / 10
-                        </Badge>
+                        {session.overallScore != null && (
+                          <Badge
+                            variant="outline"
+                            className={cn(scoreBg(session.overallScore ?? 0))}
+                          >
+                            {(session.overallScore ?? 0).toFixed(1)} / 10
+                          </Badge>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleExport(session);
+                            void handleExport(session);
                           }}
                           disabled={exporting === session.id}
                         >
@@ -133,21 +206,29 @@ export default function HistoryPage() {
                   </CardHeader>
                   {open && (
                     <CardContent className="space-y-8 border-t pt-6">
-                      {session.answers.map((a, i) => (
-                        <div key={i} className="space-y-3">
-                          <div>
-                            <Badge variant="secondary">Q{i + 1}</Badge>
-                            <p className="mt-2 font-medium">{a.questionText}</p>
-                            <p className="mt-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
-                              {a.answerText}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Answered in {a.durationSeconds}s
-                            </p>
+                      {session.answers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No answers recorded yet.
+                        </p>
+                      ) : (
+                        session.answers.map((a, i) => (
+                          <div key={i} className="space-y-3">
+                            <div>
+                              <Badge variant="secondary">Q{i + 1}</Badge>
+                              <p className="mt-2 font-medium">
+                                {a.questionText}
+                              </p>
+                              <p className="mt-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+                                {a.answerText}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Answered in {a.durationSeconds}s
+                              </p>
+                            </div>
+                            <FeedbackPanel feedback={a.feedback} />
                           </div>
-                          <FeedbackPanel feedback={a.feedback} />
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </CardContent>
                   )}
                 </Card>

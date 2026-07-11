@@ -2,15 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { generateLocalFeedback } from "@/lib/ai-feedback";
 import type { AIFeedback, InterviewMode } from "@/lib/types";
+import { clientKeyFromRequest, rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/feedback
  * Body: { question, answer, mode }
- *
- * Uses SpaceXAI (xAI) when XAI_API_KEY is set; otherwise heuristic engine.
- * Base URL: https://api.x.ai/v1  |  Model: grok-4.5 (or XAI_MODEL)
  */
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(`feedback:${clientKeyFromRequest(req)}`, 40, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `Rate limit exceeded. Retry in ${rl.retryAfterSec}s.` },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const question = String(body.question || "");

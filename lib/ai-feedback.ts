@@ -159,13 +159,16 @@ function followUp(scores: AnswerScores, mode: InterviewMode): string | undefined
 export function generateLocalFeedback(
   question: string,
   answer: string,
-  mode: InterviewMode
+  mode: InterviewMode | string
 ): AIFeedback {
+  const m = (mode === "jd" || mode === "system-design" ? "technical" : mode) as InterviewMode;
   const clarity = scoreClarity(answer);
   const relevance = scoreRelevance(answer, question);
   const structure =
-    mode === "technical" ? scoreTechnical(answer, mode) : scoreSTAR(answer);
-  const technicalAccuracy = scoreTechnical(answer, mode);
+    m === "technical" || m === "mixed"
+      ? scoreTechnical(answer, m)
+      : scoreSTAR(answer);
+  const technicalAccuracy = scoreTechnical(answer, m);
   const confidence = scoreConfidence(answer);
   const overall = clamp(
     Math.round(
@@ -187,10 +190,10 @@ export function generateLocalFeedback(
   return {
     scores,
     strengths: buildStrengths(scores, answer),
-    improvements: buildImprovements(scores, answer, mode),
-    sampleBetterAnswer: sampleBetterAnswer(question, mode),
-    keyPhrases: keyPhrases(mode),
-    followUpQuestion: followUp(scores, mode),
+    improvements: buildImprovements(scores, answer, m),
+    sampleBetterAnswer: sampleBetterAnswer(question, m),
+    keyPhrases: keyPhrases(m),
+    followUpQuestion: followUp(scores, m),
     summary:
       overall >= 8
         ? "Excellent response — polished, relevant, and interview-ready."
@@ -208,6 +211,9 @@ export interface LocalResumeResult {
   talkingPoints: string[];
   sampleAnswers: { prompt: string; answer: string }[];
   suggestedRoles: string[];
+  suggestedQuestions: string[];
+  atsScore: number;
+  atsTips: string[];
 }
 
 /** Pull short “experience-like” lines from raw resume text for highlights. */
@@ -361,6 +367,41 @@ export function generateLocalResumeAnalysis(
       "Situation: Ambiguous requirements threatened a deadline. Task: I owned alignment and delivery. Action: I ran a short discovery spike, proposed two options with trade-offs, and shipped the MVP with monitoring. Result: We hit the date and reduced rework the following sprint.",
   });
 
+  const suggestedQuestions = [
+    "Walk me through a project on your resume end-to-end.",
+    "Tell me about a time you disagreed with a stakeholder.",
+    "What is your greatest technical (or professional) strength?",
+    "Describe a failure and what you changed afterward.",
+    "Why this role / company, and why now?",
+  ];
+
+  // ATS-style heuristic (local, transparent)
+  let ats = 55;
+  if (/\d+%|\d+x|\$\d|increased|reduced|improved/.test(lower)) ats += 12;
+  if (/led|owned|drove|managed|built|designed|shipped/.test(lower)) ats += 10;
+  if (
+    /react|python|sql|java|aws|figma|salesforce|excel|typescript|node/.test(
+      lower
+    )
+  )
+    ats += 8;
+  if (text.length > 1200) ats += 6;
+  if (text.length < 600) ats -= 10;
+  if (!/@|email|linkedin|github|portfolio/.test(lower)) {
+    ats -= 4;
+  }
+  ats = Math.max(28, Math.min(96, Math.round(ats)));
+
+  const atsTips: string[] = [];
+  if (ats < 70)
+    atsTips.push("Add 3–5 quantified bullets (%, $, time) near the top.");
+  if (!/skills|technologies|tools/.test(lower))
+    atsTips.push("Include a clear Skills section with role-matched keywords.");
+  if (weaknesses.length)
+    atsTips.push("Address the gaps listed under improvements before applying.");
+  if (atsTips.length === 0)
+    atsTips.push("Tailor the top third of your resume to each job description.");
+
   const experienceHighlights = extractHighlights(text);
   const uniq = (arr: string[]) => Array.from(new Set(arr));
 
@@ -377,5 +418,95 @@ export function generateLocalResumeAnalysis(
     talkingPoints: uniq(talkingPoints).slice(0, 6),
     sampleAnswers: sampleAnswers.slice(0, 4),
     suggestedRoles: uniq(suggestedRoles).slice(0, 5),
+    suggestedQuestions: uniq(suggestedQuestions).slice(0, 6),
+    atsScore: ats,
+    atsTips: uniq(atsTips).slice(0, 4),
   };
+}
+
+/** Generate practice questions from a job description (local heuristic). */
+export function questionsFromJobDescription(
+  jd: string,
+  role: string
+): { id: string; text: string; category: string }[] {
+  const lower = jd.toLowerCase();
+  const qs: { id: string; text: string; category: string }[] = [];
+  const push = (id: string, text: string, category: string) =>
+    qs.push({ id, text, category });
+
+  push(
+    "jd-fit",
+    `Why are you a strong fit for this ${role} role based on the job description?`,
+    "behavioral"
+  );
+  push(
+    "jd-impact",
+    "Describe a past result that maps most closely to the outcomes this role needs.",
+    "behavioral"
+  );
+
+  if (/react|frontend|typescript|javascript|ui/.test(lower)) {
+    push(
+      "jd-fe",
+      "How would you structure a complex React application for maintainability and performance?",
+      "technical"
+    );
+  }
+  if (/backend|api|distributed|microservices|scala|java|go|python/.test(lower)) {
+    push(
+      "jd-be",
+      "Walk through designing a reliable API that must handle traffic spikes.",
+      "system-design"
+    );
+  }
+  if (/product|roadmap|stakeholder|priorit/.test(lower)) {
+    push(
+      "jd-pm",
+      "How would you prioritize the first 90 days of roadmap work for this product?",
+      "product"
+    );
+  }
+  if (/data|sql|analytics|machine learning|ml|model/.test(lower)) {
+    push(
+      "jd-data",
+      "Tell me about an analysis or model that changed a business decision.",
+      "technical"
+    );
+  }
+  if (/lead|manage|mentor|people/.test(lower)) {
+    push(
+      "jd-lead",
+      "Describe how you've grown others while delivering under pressure.",
+      "leadership"
+    );
+  }
+  if (/customer|sales|pipeline|quota/.test(lower)) {
+    push(
+      "jd-sales",
+      "Walk me through a complex deal or customer save from discovery to close.",
+      "behavioral"
+    );
+  }
+
+  push(
+    "jd-challenge",
+    "What would be the hardest part of this job for you, and how would you ramp?",
+    "situational"
+  );
+  push(
+    "jd-values",
+    "Which requirement in the JD are you most excited about, and why?",
+    "behavioral"
+  );
+
+  // Fill to ~8
+  while (qs.length < 8) {
+    push(
+      `jd-extra-${qs.length}`,
+      "Tell me about a time you collaborated across teams to ship something ambiguous.",
+      "behavioral"
+    );
+  }
+
+  return qs.slice(0, 10);
 }

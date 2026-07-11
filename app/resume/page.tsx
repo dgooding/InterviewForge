@@ -17,7 +17,10 @@ import {
   RefreshCw,
   Trash2,
   Mic,
+  Copy,
+  HelpCircle,
 } from "lucide-react";
+import { copyToClipboard } from "@/lib/copy";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
@@ -87,6 +90,9 @@ export default function ResumePage() {
           talkingPoints: a.talkingPoints || [],
           sampleAnswers: a.sampleAnswers || [],
           suggestedRoles: a.suggestedRoles || [],
+          suggestedQuestions: a.suggestedQuestions || [],
+          atsScore: a.atsScore,
+          atsTips: a.atsTips || [],
           rawTextExcerpt: text.slice(0, 500),
           source: data.source,
         };
@@ -300,8 +306,46 @@ export default function ResumePage() {
                 <CardDescription className="text-base leading-relaxed">
                   {resumeAnalysis.summary}
                 </CardDescription>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const ok = await copyToClipboard(resumeAnalysis.summary);
+                      toast.success(ok ? "Summary copied" : "Copy failed");
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy summary
+                  </Button>
+                </div>
               </CardHeader>
             </Card>
+
+            {typeof resumeAnalysis.atsScore === "number" && (
+              <Card className="border-primary/15">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">ATS-style score</CardTitle>
+                  <CardDescription>
+                    Local heuristic for keyword & impact signals — not an
+                    employer ATS guarantee.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-4xl font-bold text-primary">
+                    {resumeAnalysis.atsScore}
+                    <span className="text-lg text-muted-foreground">/100</span>
+                  </p>
+                  <ul className="mt-3 space-y-1.5">
+                    {(resumeAnalysis.atsTips || []).map((t, i) => (
+                      <li key={i} className="text-sm text-muted-foreground">
+                        · {t}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
@@ -380,11 +424,24 @@ export default function ResumePage() {
             </Card>
 
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Lightbulb className="h-4 w-4 text-amber-500" />
                   Talking points
                 </CardTitle>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    const ok = await copyToClipboard(
+                      resumeAnalysis.talkingPoints.join("\n• ")
+                    );
+                    toast.success(ok ? "Talking points copied" : "Copy failed");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy all
+                </Button>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
@@ -400,6 +457,38 @@ export default function ResumePage() {
                 </ul>
               </CardContent>
             </Card>
+
+            {(resumeAnalysis.suggestedQuestions?.length ?? 0) > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <HelpCircle className="h-4 w-4 text-primary" />
+                    Suggested practice questions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {resumeAnalysis.suggestedQuestions!.map((q, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start justify-between gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm"
+                    >
+                      <span>{q}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 shrink-0"
+                        onClick={async () => {
+                          const ok = await copyToClipboard(q);
+                          toast.success(ok ? "Copied" : "Copy failed");
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {(resumeAnalysis.sampleAnswers?.length ?? 0) > 0 && (
               <Card>
@@ -418,9 +507,24 @@ export default function ResumePage() {
                       key={i}
                       className="rounded-xl border border-border/60 p-4"
                     >
-                      <p className="text-sm font-medium text-primary">
-                        {sa.prompt}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-primary">
+                          {sa.prompt}
+                        </p>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 shrink-0"
+                          onClick={async () => {
+                            const ok = await copyToClipboard(
+                              `${sa.prompt}\n\n${sa.answer}`
+                            );
+                            toast.success(ok ? "Copied" : "Copy failed");
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                         {sa.answer}
                       </p>

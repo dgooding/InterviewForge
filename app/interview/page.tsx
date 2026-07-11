@@ -15,12 +15,18 @@ import {
   ChevronRight,
   Flag,
   RotateCcw,
+  Pause,
+  Play,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
 import { getQuestions, COMPANY_STYLES } from "@/lib/questions";
 import { JOB_ROLES } from "@/lib/roles";
-import { generateLocalFeedback } from "@/lib/ai-feedback";
+import {
+  generateLocalFeedback,
+  questionsFromJobDescription,
+} from "@/lib/ai-feedback";
 import { average } from "@/lib/utils";
 import type {
   InterviewMode,
@@ -70,6 +76,12 @@ const MODES: {
     count: 8,
   },
   {
+    id: "system-design",
+    label: "System design",
+    desc: "Architecture, trade-offs, scale",
+    count: 6,
+  },
+  {
     id: "mixed",
     label: "Mixed Mock",
     desc: "Full simulation with 12 questions",
@@ -80,6 +92,12 @@ const MODES: {
     label: "Company-Specific",
     desc: "Google, Meta, Amazon LP styles, and more",
     count: 10,
+  },
+  {
+    id: "jd",
+    label: "From job description",
+    desc: "Paste a JD → tailored questions",
+    count: 8,
   },
 ];
 
@@ -104,6 +122,8 @@ export default function InterviewPage() {
   );
   const [companyStyle, setCompanyStyle] = useState<CompanyStyle>("google");
   const [customRole, setCustomRole] = useState("");
+  const [untimed, setUntimed] = useState(false);
+  const [jdText, setJdText] = useState("");
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -114,6 +134,11 @@ export default function InterviewPage() {
   const [recording, setRecording] = useState(false);
   const [interim, setInterim] = useState("");
   const [feedbackSource, setFeedbackSource] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [coachMsg, setCoachMsg] = useState("");
+  const [coachReply, setCoachReply] = useState("");
+  const [coachLoading, setCoachLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<number>(Date.now());
   const recorderRef = useRef<ReturnType<typeof createSpeechRecorder>>(null);
@@ -129,20 +154,28 @@ export default function InterviewPage() {
     }
   };
 
-  const startTimer = useCallback(() => {
-    clearTimer();
-    setSecondsLeft(TIMER_SECONDS);
-    startedAtRef.current = Date.now();
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearTimer();
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-  }, []);
+  const startTimer = useCallback(
+    (fromSeconds?: number) => {
+      clearTimer();
+      if (untimed) {
+        setSecondsLeft(0);
+        startedAtRef.current = Date.now();
+        return;
+      }
+      setSecondsLeft(fromSeconds ?? TIMER_SECONDS);
+      startedAtRef.current = Date.now();
+      timerRef.current = setInterval(() => {
+        setSecondsLeft((s) => {
+          if (s <= 1) {
+            clearTimer();
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    },
+    [untimed]
+  );
 
   useEffect(() => () => clearTimer(), []);
 
@@ -157,12 +190,40 @@ export default function InterviewPage() {
   const startInterview = () => {
     const role = resolveRole();
     const count = MODES.find((m) => m.id === mode)?.count ?? 10;
-    const qs = getQuestions({
-      mode,
-      role,
-      companyStyle: mode === "company" ? companyStyle : undefined,
-      limit: count,
-    });
+
+    let qs: InterviewQuestion[] = [];
+    if (mode === "jd") {
+      if (jdText.trim().length < 40) {
+        toast.error("Paste a job description (at least ~40 characters).");
+        return;
+      }
+      qs = questionsFromJobDescription(jdText, role).map((q) => ({
+        id: q.id,
+        text: q.text,
+        category: q.category as InterviewQuestion["category"],
+        mode: "jd" as const,
+        roles: ["all"],
+        difficulty: "medium" as const,
+      }));
+    } else if (mode === "system-design") {
+      qs = getQuestions({
+        mode: "technical",
+        role,
+        category: "system-design",
+        limit: count,
+      });
+      if (qs.length < 3) {
+        qs = getQuestions({ mode: "technical", role, limit: count });
+      }
+    } else {
+      qs = getQuestions({
+        mode: mode === "mixed" ? "mixed" : mode,
+        role,
+        companyStyle: mode === "company" ? companyStyle : undefined,
+        limit: count,
+      });
+    }
+
     if (qs.length === 0) {
       toast.error("No questions found for this setup. Try another mode.");
       return;
@@ -173,6 +234,9 @@ export default function InterviewPage() {
       role,
       mode,
       companyStyle: mode === "company" ? companyStyle : undefined,
+      untimed,
+      jobDescriptionExcerpt:
+        mode === "jd" ? jdText.trim().slice(0, 500) : undefined,
       startedAt: new Date().toISOString(),
       answers: [],
       status: "in_progress",
@@ -182,10 +246,71 @@ export default function InterviewPage() {
     setIndex(0);
     setAnswer("");
     setFeedback(null);
+    setPaused(false);
     setPhase("live");
     startTimer();
     addOrUpdateSession(newSession);
-    toast.success("Interview started — good luck!");
+    toast.success(
+      untimed ? "Drill started (untimed)" : "Interview started — good luck!"
+    );
+  };
+
+  const pauseSession = () => {
+    if (!session || phase !== "live") return;
+    clearTimer();
+    stopRecording();
+    setPaused(true);
+    const updated: InterviewSession = {
+      ...session,
+      status: "paused",
+      pausedQuestionIds: questions.map((q) => q.id),
+      pausedIndex: index,
+      pausedSecondsLeft: secondsLeft,
+    };
+    setSession(updated);
+    addOrUpdateSession(updated);
+    toast.message("Session paused — resume anytime");
+  };
+
+  const resumeSession = () => {
+    if (!session) return;
+    setPaused(false);
+    const updated: InterviewSession = {
+      ...session,
+      status: "in_progress",
+    };
+    setSession(updated);
+    addOrUpdateSession(updated);
+    startTimer(session.pausedSecondsLeft ?? TIMER_SECONDS);
+    setPhase("live");
+    toast.success("Resumed");
+  };
+
+  const askCoach = async () => {
+    if (!coachMsg.trim()) return;
+    setCoachLoading(true);
+    try {
+      const res = await fetch("/api/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: coachMsg,
+          context: currentQ
+            ? `Q: ${currentQ.text}\nDraft: ${answer.slice(0, 400)}`
+            : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Coach unavailable");
+        return;
+      }
+      setCoachReply(data.reply);
+    } catch {
+      toast.error("Could not reach coach");
+    } finally {
+      setCoachLoading(false);
+    }
   };
 
   const stopRecording = () => {
@@ -457,6 +582,42 @@ export default function InterviewPage() {
               </div>
             )}
 
+            {mode === "jd" && (
+              <div className="mt-6 space-y-2">
+                <p className="text-sm font-medium">Paste job description</p>
+                <Textarea
+                  placeholder="Paste the JD here — we'll generate tailored questions…"
+                  value={jdText}
+                  onChange={(e) => setJdText(e.target.value)}
+                  className="min-h-[140px]"
+                />
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                size="sm"
+                variant={!untimed ? "default" : "outline"}
+                onClick={() => setUntimed(false)}
+              >
+                Timed (2 min)
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={untimed ? "default" : "outline"}
+                onClick={() => setUntimed(true)}
+              >
+                Untimed drill
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {untimed
+                  ? "No countdown — practice at your pace"
+                  : "2-minute timer per question"}
+              </span>
+            </div>
+
             <div className="mt-10 flex justify-center">
               <Button variant="gradient" size="lg" onClick={startInterview}>
                 Begin interview
@@ -486,7 +647,7 @@ export default function InterviewPage() {
                   {currentQ.category}
                 </Badge>
               </div>
-              {phase === "live" && (
+              {phase === "live" && !untimed && !paused && (
                 <div
                   className={cn(
                     "flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium",
@@ -500,13 +661,17 @@ export default function InterviewPage() {
                   {String(secondsLeft % 60).padStart(2, "0")}
                 </div>
               )}
+              {phase === "live" && untimed && (
+                <Badge variant="secondary">Untimed</Badge>
+              )}
+              {paused && <Badge variant="warning">Paused</Badge>}
             </div>
 
             <Progress
               value={((index + (phase === "feedback" ? 1 : 0)) / questions.length) * 100}
             />
 
-            {phase === "live" && (
+            {phase === "live" && !untimed && !paused && (
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className={cn(
@@ -529,66 +694,127 @@ export default function InterviewPage() {
               </CardHeader>
               {phase === "live" && (
                 <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={speakQuestion}
-                    >
-                      <Volume2 className="h-4 w-4" />
-                      Read question
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={recording ? "destructive" : "outline"}
-                      size="sm"
-                      onClick={toggleRecord}
-                    >
-                      {recording ? (
-                        <>
-                          <MicOff className="h-4 w-4" />
-                          Stop recording
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="h-4 w-4" />
-                          Record answer
-                        </>
+                  {paused ? (
+                    <div className="flex flex-col items-center gap-3 py-8 text-center">
+                      <p className="text-muted-foreground">
+                        Session paused. Your draft answer is saved.
+                      </p>
+                      <Button variant="gradient" onClick={resumeSession}>
+                        <Play className="h-4 w-4" />
+                        Resume
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={speakQuestion}
+                        >
+                          <Volume2 className="h-4 w-4" />
+                          Read question
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={recording ? "destructive" : "outline"}
+                          size="sm"
+                          onClick={toggleRecord}
+                        >
+                          {recording ? (
+                            <>
+                              <MicOff className="h-4 w-4" />
+                              Stop recording
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="h-4 w-4" />
+                              Record answer
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={pauseSession}
+                        >
+                          <Pause className="h-4 w-4" />
+                          Pause
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCoachOpen((o) => !o)}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          Ask coach
+                        </Button>
+                      </div>
+                      {coachOpen && (
+                        <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2">
+                          <Textarea
+                            placeholder="Ask the coach anything (STAR tips, nerves, technical depth…)"
+                            value={coachMsg}
+                            onChange={(e) => setCoachMsg(e.target.value)}
+                            className="min-h-[72px]"
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={coachLoading}
+                            onClick={() => void askCoach()}
+                          >
+                            {coachLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Get tip"
+                            )}
+                          </Button>
+                          {coachReply && (
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                              {coachReply}
+                            </p>
+                          )}
+                        </div>
                       )}
-                    </Button>
-                  </div>
-                  <Textarea
-                    placeholder="Type your answer here… Use STAR for behavioral questions."
-                    value={
-                      interim ? `${answer}${answer ? " " : ""}${interim}` : answer
-                    }
-                    onChange={(e) => {
-                      setAnswer(e.target.value);
-                      setInterim("");
-                    }}
-                    className="min-h-[180px] text-base"
-                    disabled={submitting}
-                  />
-                  {recording && (
-                    <p className="animate-pulse-soft text-xs text-rose-500">
-                      ● Recording — speech will append to your answer
-                    </p>
+                      <Textarea
+                        placeholder="Type your answer here… Use STAR for behavioral questions."
+                        value={
+                          interim
+                            ? `${answer}${answer ? " " : ""}${interim}`
+                            : answer
+                        }
+                        onChange={(e) => {
+                          setAnswer(e.target.value);
+                          setInterim("");
+                        }}
+                        className="min-h-[180px] text-base"
+                        disabled={submitting}
+                      />
+                      {recording && (
+                        <p className="animate-pulse-soft text-xs text-rose-500">
+                          ● Recording — speech will append to your answer
+                        </p>
+                      )}
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="gradient"
+                          onClick={submitAnswer}
+                          disabled={submitting}
+                        >
+                          {submitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                          Submit answer
+                        </Button>
+                      </div>
+                    </>
                   )}
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="gradient"
-                      onClick={submitAnswer}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                      Submit answer
-                    </Button>
-                  </div>
                 </CardContent>
               )}
             </Card>
