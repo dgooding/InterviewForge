@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -11,6 +11,8 @@ import {
   ChevronUp,
   Search,
   Mic,
+  Play,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/components/providers";
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/card";
 import { FeedbackPanel } from "@/components/feedback-panel";
 import type { InterviewSession } from "@/lib/types";
+import { isInterviewMode } from "@/components/interview/interview-simulator";
 
 export default function HistoryPage() {
   const { sessions, user } = useApp();
@@ -38,6 +41,18 @@ export default function HistoryPage() {
   const [modeFilter, setModeFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState<string | null>(focusId);
   const [exporting, setExporting] = useState<string | null>(null);
+
+  // Deep link from dashboard: /history?id=...
+  useEffect(() => {
+    if (!focusId) return;
+    setExpanded(focusId);
+    const t = window.setTimeout(() => {
+      document
+        .getElementById(`session-${focusId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [focusId]);
 
   const filtered = useMemo(() => {
     let list = sessions
@@ -102,12 +117,22 @@ export default function HistoryPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="pl-9 pr-9"
               placeholder="Search role, mode, or answer text…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Search history"
             />
+            {search && (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+                onClick={() => setSearch("")}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -151,6 +176,7 @@ export default function HistoryPage() {
               return (
                 <Card
                   key={session.id}
+                  id={`session-${session.id}`}
                   className={cn(
                     focusId === session.id && "ring-1 ring-primary/40"
                   )}
@@ -206,9 +232,36 @@ export default function HistoryPage() {
                   </CardHeader>
                   {open && (
                     <CardContent className="space-y-8 border-t pt-6">
+                      <div className="flex flex-wrap gap-2">
+                        <Button asChild size="sm" variant="gradient">
+                          <Link
+                            href={
+                              isInterviewMode(session.mode)
+                                ? `/interview/${session.mode}`
+                                : "/interview"
+                            }
+                          >
+                            <Play className="h-3.5 w-3.5" />
+                            Practice this mode again
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href="/analytics">View analytics</Link>
+                        </Button>
+                      </div>
                       {session.answers.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          No answers recorded yet.
+                          No answers recorded yet.{" "}
+                          <Link
+                            href={
+                              isInterviewMode(session.mode)
+                                ? `/interview/${session.mode}`
+                                : "/interview"
+                            }
+                            className="font-medium text-primary hover:underline"
+                          >
+                            Start a new session
+                          </Link>
                         </p>
                       ) : (
                         session.answers.map((a, i) => (

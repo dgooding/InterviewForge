@@ -109,6 +109,18 @@ export function KeyboardHints() {
             <kbd className="rounded border px-1.5">h</kbd> History
           </li>
           <li>
+            <kbd className="rounded border px-1.5">g</kbd>{" "}
+            <kbd className="rounded border px-1.5">s</kbd> Settings
+          </li>
+          <li>
+            <kbd className="rounded border px-1.5">g</kbd>{" "}
+            <kbd className="rounded border px-1.5">a</kbd> Analytics
+          </li>
+          <li>
+            <kbd className="rounded border px-1.5">g</kbd>{" "}
+            <kbd className="rounded border px-1.5">q</kbd> Questions
+          </li>
+          <li>
             <kbd className="rounded border px-1.5">Esc</kbd> Close
           </li>
         </ul>

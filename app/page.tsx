@@ -313,6 +313,26 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
+        <nav className="mb-4 flex flex-wrap justify-center gap-x-4 gap-y-2">
+          {[
+            ["/dashboard", "Dashboard"],
+            ["/interview", "Interview"],
+            ["/questions", "Questions"],
+            ["/roles", "Roles"],
+            ["/resume", "Resume"],
+            ["/login", "Sign in"],
+            ["/faq", "FAQ"],
+            ["/privacy", "Privacy"],
+          ].map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="hover:text-primary transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
         <p>
           © {new Date().getFullYear()} InterviewForge · Built as a production-grade
           proof of concept

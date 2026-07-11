@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -7,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function PrivacyPage() {
   return (
@@ -14,7 +16,7 @@ export default function PrivacyPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">Privacy</h1>
         <p className="mt-1 text-muted-foreground">
-          Placeholder policy for the InterviewForge proof-of-concept.
+          How InterviewForge handles your practice data.
         </p>
 
         <div className="mt-8 space-y-4">
@@ -26,7 +28,8 @@ export default function PrivacyPage() {
               <p>
                 If you use the app as a guest, interview history, resume
                 analysis, streak, and preferences are stored in your browser
-                (localStorage). We do not receive that progress data.
+                (localStorage). We do not receive that progress data until you
+                choose to sign in.
               </p>
             </CardContent>
           </Card>
@@ -36,11 +39,13 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                If you sign in with Google or GitHub (when configured), progress
-                is stored in your private Supabase account protected by row-level
-                security. Local guest data is merged only after you choose to
-                sign in.
+                If you sign in (Google / email when configured), progress is
+                stored in your private Supabase account protected by row-level
+                security. Local guest data is merged only after you sign in.
               </p>
+              <Button asChild size="sm" variant="outline" className="mt-2">
+                <Link href="/login">Sign in options</Link>
+              </Button>
             </CardContent>
           </Card>
           <Card>
@@ -58,16 +63,27 @@ export default function PrivacyPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Your controls</CardTitle>
+              <CardTitle className="text-base">Export & delete</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>
-                Settings lets you export JSON, delete local progress, or wipe
-                cloud + local data. Signing out keeps local copies unless you
-                delete them.
+                You can export progress JSON or wipe local and cloud data from
+                Settings at any time.
               </p>
+              <Button asChild size="sm" variant="outline" className="mt-2">
+                <Link href="/settings">Open settings</Link>
+              </Button>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="mt-8 flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/faq">FAQ</Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link href="/dashboard">Dashboard</Link>
+          </Button>
         </div>
       </motion.div>
     </div>

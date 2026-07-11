@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Radar,
@@ -27,7 +28,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, TrendingUp, Mic, History } from "lucide-react";
 
 export default function AnalyticsPage() {
   const { stats } = useApp();
@@ -100,6 +102,23 @@ export default function AnalyticsPage() {
             <CardContent className="flex flex-col items-center py-16 text-center text-muted-foreground">
               <TrendingUp className="mb-3 h-10 w-10 opacity-40" />
               <p>Complete mock interviews to unlock analytics.</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Button asChild variant="gradient">
+                  <Link href="/interview/mixed">
+                    <Mic className="h-4 w-4" />
+                    Start mixed mock
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/interview/behavioral">Behavioral drill</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/history">
+                    <History className="h-4 w-4" />
+                    History
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (

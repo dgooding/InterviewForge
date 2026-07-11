@@ -153,13 +153,10 @@ export default function SettingsPage() {
                 </Link>
               </Button>
               <Button asChild size="sm" variant="ghost">
-                <a
-                  href="https://github.com/dgooding/InterviewForge/blob/main/SETUP.md"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Setup guide
-                </a>
+                <Link href="/faq">FAQ & help</Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/privacy">Privacy</Link>
               </Button>
             </div>
           </CardContent>

@@ -48,7 +48,7 @@ export default function DashboardPage() {
       desc: selectedRole
         ? "Start a mixed mock interview tailored to your role."
         : "Choose Software Engineer, PM, and more.",
-      href: selectedRole ? "/interview" : "/roles",
+      href: selectedRole ? "/interview/mixed" : "/roles",
       icon: Briefcase,
     },
     {
@@ -64,6 +64,12 @@ export default function DashboardPage() {
       desc: "Sharpen structure with timed behavioral questions.",
       href: "/interview/behavioral",
       icon: Mic,
+    },
+    {
+      title: "Question bank",
+      desc: "Search 200+ prompts and practice any one.",
+      href: "/questions",
+      icon: Target,
     },
   ];
 
@@ -147,6 +153,7 @@ export default function DashboardPage() {
               sub: "Average across sessions",
               icon: Trophy,
               color: "text-amber-500",
+              href: "/analytics",
             },
             {
               label: "Day streak",
@@ -154,6 +161,7 @@ export default function DashboardPage() {
               sub: "Keep the fire going",
               icon: Flame,
               color: "text-orange-500",
+              href: "/interview",
             },
             {
               label: "Sessions",
@@ -161,6 +169,7 @@ export default function DashboardPage() {
               sub: "Completed mock interviews",
               icon: Target,
               color: "text-indigo-500",
+              href: "/history",
             },
             {
               label: "Best score",
@@ -168,25 +177,23 @@ export default function DashboardPage() {
               sub: "Personal record",
               icon: TrendingUp,
               color: "text-emerald-500",
+              href: "/analytics",
             },
           ].map((s) => (
-            <Card key={s.label}>
-              <CardContent className="flex items-start justify-between pt-6">
-                <div>
-                  <p className="text-sm text-muted-foreground">{s.label}</p>
-                  <p className="mt-1 text-3xl font-bold">{s.value}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{s.sub}</p>
-                </div>
-                <div
-                  className={cn(
-                    "rounded-xl bg-muted p-2.5",
-                    s.color
-                  )}
-                >
-                  <s.icon className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
+            <Link key={s.label} href={s.href} className="block">
+              <Card className="h-full transition-all hover:border-primary/40 hover:shadow-glow">
+                <CardContent className="flex items-start justify-between pt-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{s.label}</p>
+                    <p className="mt-1 text-3xl font-bold">{s.value}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{s.sub}</p>
+                  </div>
+                  <div className={cn("rounded-xl bg-muted p-2.5", s.color)}>
+                    <s.icon className="h-5 w-5" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 

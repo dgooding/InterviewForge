@@ -3,7 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Cloud, LogOut, Settings, User as UserIcon, Loader2 } from "lucide-react";
+import {
+  Cloud,
+  LogOut,
+  Settings,
+  User as UserIcon,
+  Loader2,
+  LayoutDashboard,
+  Mic,
+  History,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -101,6 +110,33 @@ export function UserMenu() {
                 </p>
               )}
             </div>
+            <Link
+              href="/dashboard"
+              role="menuitem"
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+              onClick={() => setOpen(false)}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Link>
+            <Link
+              href="/interview"
+              role="menuitem"
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+              onClick={() => setOpen(false)}
+            >
+              <Mic className="h-4 w-4" />
+              Interview hub
+            </Link>
+            <Link
+              href="/history"
+              role="menuitem"
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+              onClick={() => setOpen(false)}
+            >
+              <History className="h-4 w-4" />
+              History
+            </Link>
             <Link
               href="/settings"
               role="menuitem"

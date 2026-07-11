@@ -118,9 +118,14 @@ export function OnboardingModal() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
               {step >= STEPS.length - 1 && (
-                <Button asChild variant="outline" onClick={close}>
-                  <Link href="/interview">Start interview</Link>
-                </Button>
+                <>
+                  <Button asChild variant="outline" onClick={close}>
+                    <Link href="/interview">Interview hub</Link>
+                  </Button>
+                  <Button asChild variant="ghost" onClick={close}>
+                    <Link href="/questions">Question bank</Link>
+                  </Button>
+                </>
               )}
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">

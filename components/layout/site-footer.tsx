@@ -6,12 +6,16 @@ import { Sparkles } from "lucide-react";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/roles", label: "Roles" },
   { href: "/interview", label: "Interview" },
   { href: "/resume", label: "Resume" },
   { href: "/questions", label: "Questions" },
+  { href: "/history", label: "History" },
+  { href: "/analytics", label: "Analytics" },
   { href: "/faq", label: "FAQ" },
   { href: "/privacy", label: "Privacy" },
   { href: "/settings", label: "Settings" },
+  { href: "/login", label: "Sign in" },
 ];
 
 export function SiteFooter() {
