@@ -32,7 +32,7 @@ InterviewForge is a production-ready, full-stack **AI-Powered Job Interview Prep
 7. **Live mock simulator** — Timer, text + Web Speech API recording, AI feedback, follow-ups  
 8. **AI feedback engine** — Clarity, relevance, STAR/structure, technical, confidence  
 9. **Analytics** — Recharts trends, radar category scores, weak areas  
-10. **Question bank** — **200+** filterable questions  
+10. **Question bank** — **500+** filterable questions  
 11. **History & PDF reports** — jsPDF export  
 12. **Polish** — Dark/light mode, Framer Motion, toasts, confetti on high scores, mobile-first UI  
 
@@ -188,7 +188,7 @@ InterviewForge/
 ├── lib/
 │   ├── auth.ts
 │   ├── ai-feedback.ts
-│   ├── questions.ts            # 200+ questions
+│   ├── questions.ts            # 500+ questions
 │   ├── roles.ts
 │   ├── storage.ts              # localStorage + Supabase notes
 │   ├── stats.ts

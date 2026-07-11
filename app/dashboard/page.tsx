@@ -67,7 +67,7 @@ export default function DashboardPage() {
     },
     {
       title: "Question bank",
-      desc: "Search 200+ prompts and practice any one.",
+      desc: "Search 500+ prompts and practice any one.",
       href: "/questions",
       icon: Target,
     },

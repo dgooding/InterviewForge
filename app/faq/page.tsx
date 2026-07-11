@@ -43,7 +43,7 @@ const FAQS = [
   },
   {
     q: "Where is the question bank?",
-    a: "Browse 200+ prompts, filter by category and difficulty, bookmark favorites, and practice any question in the simulator.",
+    a: "Browse 500+ prompts, filter by category and difficulty, bookmark favorites, and practice any question in the simulator.",
     href: "/questions",
     cta: "Open question bank",
   },
