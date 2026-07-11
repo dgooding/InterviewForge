@@ -1,7 +1,9 @@
 import type { InterviewQuestion, InterviewMode, CompanyStyle } from "./types";
+import { EXTRA_QUESTIONS } from "./questions-extra";
 
 /**
- * 200+ pre-loaded interview questions across categories.
+ * 500+ pre-loaded interview questions across categories.
+ * Core bank + psychologist-informed extended bank (competency & structured interview items).
  * Filter with getQuestions({ mode, role, company, search }).
  */
 
@@ -865,6 +867,7 @@ export const QUESTIONS: InterviewQuestion[] = [
     mode: "behavioral",
     roles: ["hr-business-partner", "engineering-manager"],
   }),
+  ...EXTRA_QUESTIONS,
 ];
 
 export interface QuestionFilter {

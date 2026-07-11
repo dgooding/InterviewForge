@@ -222,7 +222,7 @@ export default function InterviewHubPage() {
         </section>
 
         <section className="mt-10 grid gap-3 sm:grid-cols-3">
-          <QuickLink href="/questions" label="Question bank" desc="212+ prompts" />
+          <QuickLink href="/questions" label="Question bank" desc="500+ prompts" />
           <QuickLink href="/history" label="History" desc="Past sessions" />
           <QuickLink href="/analytics" label="Analytics" desc="Scores & trends" />
         </section>
