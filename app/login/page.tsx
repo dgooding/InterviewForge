@@ -72,7 +72,9 @@ function LoginInner() {
       setLoading(null);
       return;
     }
-    // ID-token path: session is live; providers onAuthStateChange hydrates.
+    // OAuth: browser navigates to Google — keep spinner
+    if (res.redirecting) return;
+    // ID-token: session is live; providers onAuthStateChange hydrates
     toast.success("Signed in with Google");
     router.replace("/dashboard");
   };

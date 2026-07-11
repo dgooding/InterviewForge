@@ -546,21 +546,31 @@ export async function deleteAllCloudData(userId: string): Promise<boolean> {
 }
 
 /**
- * Google sign-in via Identity Services ID token (not OAuth code exchange).
+ * Google sign-in — two modes (NEXT_PUBLIC_GOOGLE_AUTH_MODE):
  *
- * Why: Supabase's Google "code" flow was failing with
- * "Unable to exchange external code" because the Client Secret in Supabase
- * does not match the classic Google OAuth client. ID-token login only needs
- * the Client ID (JWT verified with Google's public keys) — no secret.
+ * - oauth (default once Client Secret is correct in Supabase):
+ *   signInWithOAuth → Google → Supabase /auth/v1/callback → app /auth/callback (PKCE)
  *
- * Flow: open Firebase-hosted GIS popup (authorized domain for the client) →
- * receive credential via postMessage → supabase.auth.signInWithIdToken.
+ * - id_token:
+ *   Firebase-hosted GIS popup → postMessage credential → signInWithIdToken
+ *   (does not need a valid Google Client Secret in Supabase; only matching Client ID)
+ *
+ * - auto (default): try id_token first (works while secret is wrong), fall back message
+ *   Set NEXT_PUBLIC_GOOGLE_AUTH_MODE=oauth after applying a valid secret.
  */
 const GOOGLE_BRIDGE_ORIGIN =
   process.env.NEXT_PUBLIC_GOOGLE_BRIDGE_URL ||
   "https://interviewforge-auth-37599.web.app";
 
-export async function signInWithGoogle(): Promise<{ error?: string }> {
+export type GoogleSignInResult = {
+  error?: string;
+  /** Browser is navigating to Google / Supabase — leave spinner up */
+  redirecting?: boolean;
+  /** Session already established in-page (ID token path) */
+  signedIn?: boolean;
+};
+
+export async function signInWithGoogle(): Promise<GoogleSignInResult> {
   const supabase = getSupabaseBrowser();
   if (!supabase) {
     return {
@@ -573,6 +583,81 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
     return { error: "Google sign-in must run in the browser." };
   }
 
+  const mode = (
+    process.env.NEXT_PUBLIC_GOOGLE_AUTH_MODE || "auto"
+  ).toLowerCase();
+
+  if (mode === "oauth") {
+    return signInWithGoogleOAuth(supabase);
+  }
+  if (mode === "id_token") {
+    return signInWithGoogleIdToken(supabase);
+  }
+
+  // auto: prefer ID token (survives wrong client secret), then OAuth
+  const idRes = await signInWithGoogleIdToken(supabase);
+  if (!idRes.error) return idRes;
+
+  // If popup blocked or GIS origin mismatch, try classic OAuth
+  const softFail =
+    /popup|origin|blocked|timed out|cancelled|closed/i.test(
+      idRes.error || ""
+    );
+  if (softFail) {
+    const oauthRes = await signInWithGoogleOAuth(supabase);
+    if (!oauthRes.error) return oauthRes;
+    return {
+      error: `${idRes.error} · OAuth fallback: ${oauthRes.error}`,
+    };
+  }
+  return idRes;
+}
+
+async function signInWithGoogleOAuth(
+  supabase: NonNullable<ReturnType<typeof getSupabaseBrowser>>
+): Promise<GoogleSignInResult> {
+  // App return URL — Supabase must allowlist this.
+  // Google Authorized redirect URI stays Supabase /auth/v1/callback (not this).
+  const redirectTo = `${window.location.origin}/auth/callback`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      queryParams: {
+        access_type: "offline",
+        prompt: "select_account",
+      },
+    },
+  });
+
+  if (error) {
+    const msg = error.message || String(error);
+    if (
+      msg.includes("provider is not enabled") ||
+      msg.includes("Unsupported provider") ||
+      msg.includes("validation_failed")
+    ) {
+      return {
+        error:
+          "Google isn’t enabled in Supabase yet. Use email magic link, or enable Google under Authentication → Providers with Client ID + Secret.",
+      };
+    }
+    return { error: msg };
+  }
+
+  if (data?.url) {
+    window.location.assign(data.url);
+    return { redirecting: true };
+  }
+
+  return { error: "Could not start Google sign-in. Try again or use email." };
+}
+
+async function signInWithGoogleIdToken(
+  supabase: NonNullable<ReturnType<typeof getSupabaseBrowser>>
+): Promise<GoogleSignInResult> {
   try {
     const credential = await openGoogleIdTokenPopup(GOOGLE_BRIDGE_ORIGIN);
     const { error } = await supabase.auth.signInWithIdToken({
@@ -593,7 +678,7 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
       }
       return { error: msg };
     }
-    return {};
+    return { signedIn: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === "popup_closed" || msg === "cancelled") {
@@ -610,7 +695,7 @@ function openGoogleIdTokenPopup(bridgeOrigin: string): Promise<string> {
     const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
     const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
     const popup = window.open(
-      bridgeOrigin + "/?v=1",
+      bridgeOrigin + "/?v=2",
       "interviewforge-google",
       `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,status=no`
     );

@@ -75,7 +75,11 @@ export function resetToGuest(preserveProgress = true): User {
   return createFreshGuest();
 }
 
-export async function signInWithGoogle(): Promise<{ error?: string }> {
+export async function signInWithGoogle(): Promise<{
+  error?: string;
+  redirecting?: boolean;
+  signedIn?: boolean;
+}> {
   if (!isSupabaseConfigured()) {
     return {
       error:
