@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Signup redirects to login (Google is the account path). */
+/** Signup is handled on the login page create-account tab. */
 export default function SignupPage() {
-  redirect("/login");
+  redirect("/login?mode=signup");
 }

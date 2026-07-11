@@ -4,7 +4,17 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Cloud, HardDrive, Shield, Mail } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  Shield,
+  Mail,
+  Lock,
+  UserPlus,
+  LogIn,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +29,8 @@ import {
   signInWithGoogle,
   signInWithGitHub,
   signInWithEmail,
+  signInWithPassword,
+  signUpWithPassword,
   isSupabaseConfigured,
   isGoogleOAuthEnabled,
   isGitHubOAuthEnabled,
@@ -27,16 +39,32 @@ import { useApp } from "@/components/providers";
 import { hasLocalProgress } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+
+type Mode = "signin" | "signup" | "magic";
 
 function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isCloudUser, cloudEnabled } = useApp();
+
+  const initialMode =
+    searchParams.get("mode") === "signup"
+      ? "signup"
+      : searchParams.get("mode") === "magic"
+        ? "magic"
+        : "signin";
+
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [loading, setLoading] = useState<
-    "google" | "github" | "email" | null
+    "google" | "github" | "password" | "magic" | null
   >(null);
   const [email, setEmail] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [magicSent, setMagicSent] = useState(false);
+
   const configured = isSupabaseConfigured() || cloudEnabled;
   const googleOn = isGoogleOAuthEnabled();
   const githubOn = isGitHubOAuthEnabled();
@@ -51,18 +79,68 @@ function LoginInner() {
     if (
       r.includes("provider is not enabled") ||
       r.includes("unsupported provider") ||
-      r.includes("validation_failed")
+      r.includes("validation_failed") ||
+      r.includes("unable to exchange")
     ) {
-      return `${provider} isn’t enabled in Supabase yet. Use the email magic link (works now), or add ${provider} Client ID/Secret in Supabase → Authentication → Providers.`;
+      return `${provider} sign-in isn’t available right now. Use email + password or a magic link instead.`;
     }
     return raw;
   };
 
+  const onPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!configured) {
+      toast.error("Cloud login isn’t configured on this deployment.");
+      return;
+    }
+    setLoading("password");
+    try {
+      if (mode === "signup") {
+        const res = await signUpWithPassword(email, password, name);
+        if (res.error) {
+          toast.error(res.error);
+          return;
+        }
+        if (res.needsConfirm) {
+          toast.success(
+            "Account created — check your email to confirm, then sign in."
+          );
+          setMode("signin");
+          return;
+        }
+        toast.success("Account created — you’re signed in");
+        router.replace("/dashboard");
+        return;
+      }
+
+      const res = await signInWithPassword(email, password);
+      if (res.error) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("Signed in");
+      router.replace("/dashboard");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const onMagic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading("magic");
+    const res = await signInWithEmail(email);
+    setLoading(null);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    setMagicSent(true);
+    toast.success("Check your email for the sign-in link");
+  };
+
   const onGoogle = async () => {
     if (!googleOn) {
-      toast.message(
-        "Google isn’t enabled yet. Use email magic link, or configure Google in Supabase (see docs/GOOGLE_OAUTH_EXACT.md)."
-      );
+      toast.message("Use email + password or a magic link to sign in.");
       return;
     }
     setLoading("google");
@@ -72,20 +150,13 @@ function LoginInner() {
       setLoading(null);
       return;
     }
-    // OAuth: browser navigates to Google — keep spinner
     if (res.redirecting) return;
-    // ID-token: session is live; providers onAuthStateChange hydrates
     toast.success("Signed in with Google");
     router.replace("/dashboard");
   };
 
   const onGitHub = async () => {
-    if (!githubOn) {
-      toast.message(
-        "GitHub isn’t enabled yet. Use email magic link, or add a GitHub OAuth app in Supabase Providers."
-      );
-      return;
-    }
+    if (!githubOn) return;
     setLoading("github");
     const res = await signInWithGitHub();
     if (res.error) {
@@ -94,23 +165,11 @@ function LoginInner() {
     }
   };
 
-  const onEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading("email");
-    const res = await signInWithEmail(email);
-    setLoading(null);
-    if (res.error) {
-      toast.error(res.error);
-      return;
-    }
-    setEmailSent(true);
-    toast.success("Check your email for the sign-in link");
-  };
-
   const oauthError = searchParams.get("error");
+  const errorMessage = searchParams.get("message");
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-16">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -123,73 +182,222 @@ function LoginInner() {
             </span>
             InterviewForge
           </Link>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Sign in to your account
+          </p>
         </div>
 
-        <Card className="border-primary/10 shadow-glow">
-          <CardHeader>
-            <CardTitle>Save progress across devices</CardTitle>
+        <Card className="border-indigo-500/15 shadow-glow">
+          <CardHeader className="space-y-3">
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              {mode === "signup" ? (
+                <>
+                  <UserPlus className="h-6 w-6 text-indigo-500" />
+                  Create account
+                </>
+              ) : mode === "magic" ? (
+                <>
+                  <Mail className="h-6 w-6 text-indigo-500" />
+                  Email magic link
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-6 w-6 text-indigo-500" />
+                  Sign in
+                </>
+              )}
+            </CardTitle>
             <CardDescription>
-              Optional. Guest mode keeps everything on this browser only.
-              Signing in uploads your local progress to your private account.
+              {mode === "signup"
+                ? "Create an account with email and password. Your practice progress can sync privately."
+                : mode === "magic"
+                  ? "We’ll email you a one-tap link — no password needed."
+                  : "Use your email and password. Guest progress on this device can merge after you sign in."}
             </CardDescription>
+
+            {/* Mode tabs */}
+            <div className="flex rounded-xl border border-border/70 bg-muted/40 p-1">
+              {(
+                [
+                  { id: "signin" as const, label: "Sign in" },
+                  { id: "signup" as const, label: "Create account" },
+                  { id: "magic" as const, label: "Magic link" },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setMode(tab.id);
+                    setMagicSent(false);
+                  }}
+                  className={cn(
+                    "flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition-all sm:text-sm",
+                    mode === tab.id
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </CardHeader>
+
           <CardContent className="space-y-4">
             {oauthError && (
               <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">
-                {searchParams.get("message")
-                  ? decodeURIComponent(searchParams.get("message")!)
-                  : "Sign-in was cancelled or failed. Try Google again, or use the email magic link below."}
+                {errorMessage
+                  ? decodeURIComponent(errorMessage)
+                  : "Sign-in failed. Try email + password or a magic link."}
               </p>
             )}
 
             {willMigrate && (
-              <p className="flex gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-                <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                We found local practice data on this device. After sign-in it
-                will be merged into your account (never shared with other users).
+              <p className="flex gap-2 rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-2 text-xs text-muted-foreground">
+                <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                Local practice data on this device will merge into your account
+                after sign-in (never shared with other users).
               </p>
             )}
 
-            {/* Email — works with current Supabase config */}
-            <form onSubmit={onEmail} className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" />
-                Email magic link (works now)
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={!!loading || emailSent}
-                required
-              />
-              <Button
-                type="submit"
-                variant="gradient"
-                className="w-full"
-                disabled={!!loading || !configured || emailSent}
-              >
-                {loading === "email" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : emailSent ? (
-                  "Link sent — check your inbox"
-                ) : (
-                  "Email me a sign-in link"
+            {!configured && (
+              <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                Cloud login isn’t configured on this deployment (missing Supabase
+                env vars).
+              </p>
+            )}
+
+            {/* Password sign-in / sign-up */}
+            {(mode === "signin" || mode === "signup") && (
+              <form onSubmit={onPasswordSubmit} className="space-y-3">
+                {mode === "signup" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      autoComplete="name"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={!!loading}
+                    />
+                  </div>
                 )}
-              </Button>
-              {emailSent && (
-                <p className="text-xs text-muted-foreground">
-                  Open the link on this device. It signs you in and syncs local
-                  progress. Check spam if needed.
-                </p>
-              )}
-            </form>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" />
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={!!loading}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="flex items-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5" />
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete={
+                        mode === "signup" ? "new-password" : "current-password"
+                      }
+                      placeholder={
+                        mode === "signup"
+                          ? "At least 6 characters"
+                          : "Your password"
+                      }
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={!!loading}
+                      required
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  className="w-full"
+                  disabled={!!loading || !configured}
+                >
+                  {loading === "password" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : mode === "signup" ? (
+                    "Create account"
+                  ) : (
+                    "Sign in"
+                  )}
+                </Button>
+              </form>
+            )}
+
+            {/* Magic link */}
+            {mode === "magic" && (
+              <form onSubmit={onMagic} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="magic-email">Email</Label>
+                  <Input
+                    id="magic-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={!!loading || magicSent}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  className="w-full"
+                  disabled={!!loading || !configured || magicSent}
+                >
+                  {loading === "magic" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : magicSent ? (
+                    "Link sent — check your inbox"
+                  ) : (
+                    "Email me a sign-in link"
+                  )}
+                </Button>
+                {magicSent && (
+                  <p className="text-xs text-muted-foreground">
+                    Open the link on this device. Check spam if you don’t see it
+                    in a minute.
+                  </p>
+                )}
+              </form>
+            )}
 
             <div className="relative py-1 text-center text-xs text-muted-foreground">
-              <span className="relative z-10 bg-card px-2">optional</span>
+              <span className="relative z-10 bg-card px-2">or continue with</span>
               <div className="absolute left-0 right-0 top-1/2 border-t border-border" />
             </div>
 
@@ -225,38 +433,45 @@ function LoginInner() {
               </Button>
             )}
 
-            {configured && (
-              <p className="text-xs text-muted-foreground">
-                Prefer email if Google is blocked on your network. Guest mode
-                keeps progress on this device only.
-              </p>
-            )}
-
-            {!configured && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Cloud login isn&apos;t configured on this deployment yet.
-              </p>
-            )}
-
-            <div className="grid gap-2 rounded-xl border border-border/60 p-3 text-xs text-muted-foreground">
-              <p className="flex items-center gap-2 font-medium text-foreground">
-                <Cloud className="h-3.5 w-3.5 text-primary" />
-                Signed in
-              </p>
-              <p>
-                Sessions, resume insights, role, and streak sync privately under
-                your account.
-              </p>
-              <p className="mt-2 flex items-center gap-2 font-medium text-foreground">
-                <HardDrive className="h-3.5 w-3.5 text-primary" />
-                Guest
-              </p>
-              <p>
-                100% local until you sign in. Nothing is uploaded as a guest.
-              </p>
-            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              {mode === "signin" ? (
+                <>
+                  No account?{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-300"
+                    onClick={() => setMode("signup")}
+                  >
+                    Create one
+                  </button>
+                </>
+              ) : mode === "signup" ? (
+                <>
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-300"
+                    onClick={() => setMode("signin")}
+                  >
+                    Sign in
+                  </button>
+                </>
+              ) : (
+                <>
+                  Prefer a password?{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-300"
+                    onClick={() => setMode("signin")}
+                  >
+                    Sign in with email
+                  </button>
+                </>
+              )}
+            </p>
           </CardContent>
-          <CardFooter className="flex flex-col gap-3">
+
+          <CardFooter className="flex flex-col gap-3 border-t border-border/60 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -265,9 +480,14 @@ function LoginInner() {
             >
               Continue as guest
             </Button>
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-xs text-muted-foreground">
+              Guest mode stays 100% on this browser.{" "}
+              <Link href="/privacy" className="text-primary hover:underline">
+                Privacy
+              </Link>
+              {" · "}
               <Link href="/settings" className="text-primary hover:underline">
-                Privacy &amp; data settings
+                Settings
               </Link>
               {" · "}
               <Link href="/" className="text-primary hover:underline">
@@ -306,7 +526,12 @@ function GoogleIcon() {
 
 function GitHubIcon() {
   return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
       <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.43 7.86 10.96.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.3-1.7-1.3-1.7-1.06-.73.08-.72.08-.72 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.11-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 2.9-.39c.98 0 1.97.13 2.9.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.84 1.19 3.1 0 4.43-2.69 5.41-5.25 5.7.42.36.79 1.08.79 2.18 0 1.57-.01 2.84-.01 3.23 0 .31.21.68.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.74 18.27.5 12 .5z" />
     </svg>
   );

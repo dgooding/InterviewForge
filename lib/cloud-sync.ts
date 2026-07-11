@@ -787,6 +787,99 @@ export async function signInWithEmailMagicLink(
   return { ok: true };
 }
 
+/** Email + password sign-in (standard login). */
+export async function signInWithEmailPassword(
+  email: string,
+  password: string
+): Promise<{ error?: string; ok?: boolean }> {
+  const supabase = getSupabaseBrowser();
+  if (!supabase) {
+    return {
+      error:
+        "Cloud login is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+    };
+  }
+  const trimmed = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { error: "Enter a valid email address." };
+  }
+  if (!password || password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: trimmed,
+    password,
+  });
+  if (error) {
+    const msg = error.message || String(error);
+    if (/invalid login credentials/i.test(msg)) {
+      return {
+        error:
+          "Incorrect email or password. Create an account below, or use a magic link.",
+      };
+    }
+    if (/email not confirmed/i.test(msg)) {
+      return {
+        error:
+          "Confirm your email first (check inbox), or use a magic link to sign in.",
+      };
+    }
+    return { error: msg };
+  }
+  return { ok: true };
+}
+
+/** Email + password registration. */
+export async function signUpWithEmailPassword(
+  email: string,
+  password: string,
+  name?: string
+): Promise<{ error?: string; ok?: boolean; needsConfirm?: boolean }> {
+  const supabase = getSupabaseBrowser();
+  if (!supabase) {
+    return {
+      error:
+        "Cloud signup is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+    };
+  }
+  const trimmed = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { error: "Enter a valid email address." };
+  }
+  if (!password || password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback`
+      : undefined;
+
+  const { data, error } = await supabase.auth.signUp({
+    email: trimmed,
+    password,
+    options: {
+      emailRedirectTo: redirectTo,
+      data: {
+        full_name: name?.trim() || trimmed.split("@")[0],
+        name: name?.trim() || trimmed.split("@")[0],
+      },
+    },
+  });
+
+  if (error) return { error: error.message };
+
+  // If email confirmations are required, session may be null
+  if (!data.session) {
+    return {
+      ok: true,
+      needsConfirm: true,
+    };
+  }
+  return { ok: true };
+}
+
 export async function signInWithGitHub(): Promise<{ error?: string }> {
   const supabase = getSupabaseBrowser();
   if (!supabase) {
