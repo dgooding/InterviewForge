@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>InterviewForge · Google Sign-In</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: system-ui, sans-serif; display:flex; min-height:100vh; align-items:center; justify-content:center; margin:0; background:#0b1020; color:#e8eefc; }
+    .card { max-width: 360px; padding: 2rem; border-radius: 16px; background:#121a33; border:1px solid #2a3558; text-align:center; }
+    p { color:#9aa8c7; font-size:14px; line-height:1.5; }
+    #status { margin-top:1rem; font-size:13px; color:#c7d2fe; }
+    .err { color:#fca5a5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 style="font-size:1.15rem;margin:0 0 .5rem">Continue with Google</h1>
+    <p>Signing you into InterviewForge securely…</p>
+    <div id="buttonDiv" style="display:flex;justify-content:center;margin-top:1rem"></div>
+    <div id="status">Loading Google…</div>
+  </div>
+  <script>
+    const CLIENT_ID = "170042599086-htoa2qhhcs9nvrnkaksrpk3e1alsu94b.apps.googleusercontent.com";
+    const PARENT_ORIGIN = "https://interviewforge-zeta.vercel.app";
+    const statusEl = document.getElementById("status");
+
+    function send(payload) {
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ source: "interviewforge-google", ...payload }, PARENT_ORIGIN);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function finish(credential) {
+      statusEl.textContent = "Success — returning to InterviewForge…";
+      send({ type: "credential", credential });
+      // Also support redirect fallback
+      const target = PARENT_ORIGIN + "/auth/google#credential=" + encodeURIComponent(credential);
+      setTimeout(() => {
+        if (window.opener && !window.opener.closed) {
+          window.close();
+        } else {
+          location.href = target;
+        }
+      }, 200);
+    }
+
+    function onError(msg) {
+      statusEl.className = "err";
+      statusEl.textContent = msg;
+      send({ type: "error", message: msg });
+    }
+
+    window.onload = function () {
+      if (!window.google || !google.accounts) {
+        // wait for script
+        let tries = 0;
+        const t = setInterval(() => {
+          tries++;
+          if (window.google && google.accounts) {
+            clearInterval(t);
+            init();
+          } else if (tries > 40) {
+            clearInterval(t);
+            onError("Google script failed to load. Close and try again.");
+          }
+        }, 100);
+        return;
+      }
+      init();
+    };
+
+    function init() {
+      try {
+        google.accounts.id.initialize({
+          client_id: CLIENT_ID,
+          callback: (response) => {
+            if (response && response.credential) {
+              finish(response.credential);
+            } else {
+              onError("No credential returned from Google.");
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          // use FedCM when available
+          use_fedcm_for_prompt: true,
+        });
+        google.accounts.id.renderButton(document.getElementById("buttonDiv"), {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          text: "continue_with",
+          width: 320,
+        });
+        statusEl.textContent = "Choose your Google account.";
+        // Also try One Tap prompt in popup
+        try { google.accounts.id.prompt(); } catch (_) {}
+      } catch (e) {
+        onError(e.message || String(e));
+      }
+    }
+  </script>
+</body>
+</html>

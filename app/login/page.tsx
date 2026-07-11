@@ -70,7 +70,11 @@ function LoginInner() {
     if (res.error) {
       toast.error(friendlyOAuthError(res.error, "Google"));
       setLoading(null);
+      return;
     }
+    // ID-token path: session is live; providers onAuthStateChange hydrates.
+    toast.success("Signed in with Google");
+    router.replace("/dashboard");
   };
 
   const onGitHub = async () => {

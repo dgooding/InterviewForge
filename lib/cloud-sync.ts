@@ -545,6 +545,21 @@ export async function deleteAllCloudData(userId: string): Promise<boolean> {
   }
 }
 
+/**
+ * Google sign-in via Identity Services ID token (not OAuth code exchange).
+ *
+ * Why: Supabase's Google "code" flow was failing with
+ * "Unable to exchange external code" because the Client Secret in Supabase
+ * does not match the classic Google OAuth client. ID-token login only needs
+ * the Client ID (JWT verified with Google's public keys) — no secret.
+ *
+ * Flow: open Firebase-hosted GIS popup (authorized domain for the client) →
+ * receive credential via postMessage → supabase.auth.signInWithIdToken.
+ */
+const GOOGLE_BRIDGE_ORIGIN =
+  process.env.NEXT_PUBLIC_GOOGLE_BRIDGE_URL ||
+  "https://interviewforge-auth-37599.web.app";
+
 export async function signInWithGoogle(): Promise<{ error?: string }> {
   const supabase = getSupabaseBrowser();
   if (!supabase) {
@@ -554,46 +569,119 @@ export async function signInWithGoogle(): Promise<{ error?: string }> {
     };
   }
 
-  const redirectTo =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/auth/callback`
-      : undefined;
+  if (typeof window === "undefined") {
+    return { error: "Google sign-in must run in the browser." };
+  }
 
-  // skipBrowserRedirect: true so we navigate exactly once after PKCE
-  // code_verifier is written to cookies by @supabase/ssr.
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo,
-      skipBrowserRedirect: true,
-      queryParams: {
-        access_type: "offline",
-        prompt: "select_account",
-      },
-    },
-  });
-
-  if (error) {
-    const msg = error.message || String(error);
-    if (
-      msg.includes("provider is not enabled") ||
-      msg.includes("Unsupported provider") ||
-      msg.includes("validation_failed")
-    ) {
-      return {
-        error:
-          "Unsupported provider: Google is not enabled in Supabase. Use email magic link, or enable Google under Authentication → Providers.",
-      };
+  try {
+    const credential = await openGoogleIdTokenPopup(GOOGLE_BRIDGE_ORIGIN);
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token: credential,
+    });
+    if (error) {
+      const msg = error.message || String(error);
+      if (
+        msg.includes("provider is not enabled") ||
+        msg.includes("Unsupported provider") ||
+        msg.includes("validation_failed")
+      ) {
+        return {
+          error:
+            "Google isn’t enabled in Supabase yet. Use email magic link, or enable Google under Authentication → Providers.",
+        };
+      }
+      return { error: msg };
     }
-    return { error: msg };
-  }
-
-  if (data?.url && typeof window !== "undefined") {
-    window.location.assign(data.url);
     return {};
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "popup_closed" || msg === "cancelled") {
+      return { error: "Google sign-in was cancelled." };
+    }
+    return { error: msg || "Google sign-in failed. Try email magic link." };
   }
+}
 
-  return { error: "Could not start Google sign-in. Try again or use email." };
+function openGoogleIdTokenPopup(bridgeOrigin: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const width = 480;
+    const height = 640;
+    const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+    const popup = window.open(
+      bridgeOrigin + "/?v=1",
+      "interviewforge-google",
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,status=no`
+    );
+
+    if (!popup) {
+      reject(
+        new Error(
+          "Popup blocked. Allow popups for this site, or use the email magic link."
+        )
+      );
+      return;
+    }
+
+    let settled = false;
+    const cleanup = () => {
+      window.removeEventListener("message", onMessage);
+      window.clearInterval(timer);
+      window.clearTimeout(timeout);
+    };
+    const done = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn();
+    };
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== bridgeOrigin) return;
+      const data = event.data;
+      if (!data || data.source !== "interviewforge-google") return;
+
+      if (data.type === "credential" && typeof data.credential === "string") {
+        try {
+          popup.close();
+        } catch {
+          /* ignore */
+        }
+        done(() => resolve(data.credential));
+        return;
+      }
+      if (data.type === "error") {
+        try {
+          popup.close();
+        } catch {
+          /* ignore */
+        }
+        done(() =>
+          reject(new Error(data.message || "Google sign-in failed."))
+        );
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+
+    const timer = window.setInterval(() => {
+      if (popup.closed) {
+        done(() => reject(new Error("popup_closed")));
+      }
+    }, 400);
+
+    const timeout = window.setTimeout(() => {
+      try {
+        popup.close();
+      } catch {
+        /* ignore */
+      }
+      done(() =>
+        reject(new Error("Google sign-in timed out. Please try again."))
+      );
+    }, 5 * 60 * 1000);
+  });
 }
 
 /** Passwordless email magic link (works without Google Cloud setup). */
